@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net40;net45;net46;net461;net462;net47</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net45;net46;net461;net462;net47</TargetFrameworks>
     <Authors>Michael Brown</Authors>
     <Company>Refactor Software</Company>
     <Description>A lightweight CSharp mapping library for mapping one object type to another.</Description>
@@ -18,12 +18,16 @@
     <DefineConstants>FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER</DefineConstants>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net461' OR '$(TargetFramework)'=='net462'">
+    <DefineConstants>FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER;FEATURE_ASYNCLOCAL</DefineConstants>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0' OR '$(TargetFramework)'=='net47'">
-    <DefineConstants>FEATURE_CUSTOM_VALUETUPLE;FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER</DefineConstants>
+    <DefineConstants>FEATURE_CUSTOM_VALUETUPLE;FEATURE_CUSTOM_ATTRIBUTES;FEATURE_CUSTOM_TYPEINFO;FEATURE_GETMETHOD;FEATURE_SETVALUE;FEATURE_TASK;FEATURE_ASSEMBLYBUILDER;FEATURE_ASYNCLOCAL</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TypeSupport" Version="1.0.15" />
+    <PackageReference Include="TypeSupport" Version="1.0.26" />
   </ItemGroup>
 
 </Project>

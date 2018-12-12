@@ -5,7 +5,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Text;
 using TypeSupport;
 using TypeSupport.Extensions;
 
@@ -21,12 +20,33 @@ namespace AnyMapper
             "JsonIgnoreAttribute",
         };
 
+        private MappingRegistry _typeRegistry;
+        /// <summary>
+        /// The type registry that contains mapping profiles
+        /// todo: a singleton instance isn't ideal
+        /// </summary>
+        public MappingRegistry TypeRegistry
+        {
+            get
+            {
+                if(_typeRegistry == null)
+                    _typeRegistry = MappingConfigurationResolutionContext.GetMappingRegistry();
+                return _typeRegistry;
+            }
+        }
+
         /// <summary>
         /// Provider for cloning objects
         /// </summary>
         public MappingProvider()
         {
             _objectFactory = new ObjectFactory();
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
         /// <summary>
@@ -39,7 +59,7 @@ namespace AnyMapper
         /// <param name="objectTree">The object tree to prevent cyclical references</param>
         /// <param name="path">The current path being traversed</param>
         /// <returns></returns>
-        private object InspectAndMap<TSource, TDest>(object sourceObject, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        private object InspectAndMap<TSource, TDest>(object sourceObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (IgnoreObjectName(null, path, options, ignorePropertiesOrPaths))
                 return null;
@@ -51,37 +71,38 @@ namespace AnyMapper
             if (maxDepth > 0 && currentDepth >= maxDepth)
                 return null;
 
+            var sourceType = new ExtendedType(typeof(TSource));
+            var destType = new ExtendedType(typeof(TDest));
+
             if (ignorePropertiesOrPaths == null)
                 ignorePropertiesOrPaths = new List<string>();
 
-            var typeSupport = new ExtendedType(sourceObject.GetType());
-
             // drop any objects we are ignoring by attribute
-            if (typeSupport.Attributes.Any(x => _ignoreAttributes.Contains(x)) && options.BitwiseHasFlag(MappingOptions.DisableIgnoreAttributes))
+            if (mapToType.Attributes.Any(x => _ignoreAttributes.Contains(x)) && options.BitwiseHasFlag(MappingOptions.DisableIgnoreAttributes))
                 return null;
 
             // for delegate types, copy them by reference rather than returning null
-            if (typeSupport.IsDelegate)
+            if (mapToType.IsDelegate)
                 return sourceObject;
 
             object newObject = null;
             // create a new empty object of the desired type
-            if (typeSupport.IsArray)
+            if (mapToType.IsArray)
             {
                 var length = 0;
-                if (typeSupport.IsArray)
+                if (mapToType.IsArray)
                     length = (sourceObject as Array).Length;
-                newObject = _objectFactory.CreateEmptyObject(typeSupport.Type, length: length);
+                newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length: length);
             }
-            else if (typeSupport.Type == typeof(string))
+            else if (mapToType.Type == typeof(string))
             {
                 // copy the item directly
-                newObject = String.Copy((string)sourceObject);
+                newObject = String.Copy(Convert.ToString(sourceObject));
                 return newObject;
             }
             else
             {
-                newObject = _objectFactory.CreateEmptyObject(typeSupport.Type);
+                newObject = _objectFactory.CreateEmptyObject(mapToType.Type);
             }
 
             if (newObject == null)
@@ -92,7 +113,7 @@ namespace AnyMapper
 
             // construct a hashtable of objects we have already inspected (simple recursion loop preventer)
             // we use this hashcode method as it does not use any custom hashcode handlers the object might implement
-            if (sourceObject != null && !typeSupport.IsValueType)
+            if (sourceObject != null && !mapToType.IsValueType)
             {
                 var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(sourceObject);
                 if (objectTree.ContainsKey(hashCode))
@@ -101,12 +122,17 @@ namespace AnyMapper
                 // ensure we can refer back to the reference for this object
                 objectTree.Add(hashCode, newObject);
             }
+
+            var objectMapper = TypeRegistry.ObjectMappings
+                .FirstOrDefault(x => x.SourceObjectType == sourceType.Type
+                    && x.DestinationObjectType == destType.Type);
+
             try
             {
                 // clone a dictionary's key/values
-                if (typeSupport.IsDictionary && typeSupport.IsGeneric)
+                if (mapToType.IsDictionary && mapToType.IsGeneric)
                 {
-                    var genericType = typeSupport.Type.GetGenericArguments().ToList();
+                    var genericType = mapToType.Type.GetGenericArguments().ToList();
                     Type[] typeArgs = { genericType[0], genericType[1] };
 
                     var listType = typeof(Dictionary<,>).MakeGenericType(typeArgs);
@@ -115,30 +141,30 @@ namespace AnyMapper
                     var enumerator = (IDictionary)sourceObject;
                     foreach (DictionaryEntry item in enumerator)
                     {
-                        var key = InspectAndMap<TSource, TDest>(item.Key, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                        var value = InspectAndMap<TSource, TDest>(item.Value, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var key = InspectAndMap<TSource, TDest>(item.Key, item.Key.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var value = InspectAndMap<TSource, TDest>(item.Value, item.Value.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newDictionary.Add(key, value);
                     }
                     return newObject;
                 }
 
                 // clone an enumerables' elements
-                if (typeSupport.IsEnumerable && typeSupport.IsGeneric)
+                if (mapToType.IsEnumerable && mapToType.IsGeneric)
                 {
-                    var genericType = typeSupport.Type.GetGenericArguments().First();
+                    var genericType = mapToType.Type.GetGenericArguments().First();
                     var genericExtendedType = new ExtendedType(genericType);
-                    var addMethod = typeSupport.Type.GetMethod("Add");
+                    var addMethod = mapToType.Type.GetMethod("Add");
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
                     {
-                        var element = InspectAndMap<TSource, TDest>(item, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var element = InspectAndMap<TSource, TDest>(item, item.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         addMethod.Invoke(newObject, new object[] { element });
                     }
                     return newObject;
                 }
 
                 // clone an arrays' elements
-                if (typeSupport.IsArray)
+                if (mapToType.IsArray)
                 {
                     var sourceArray = sourceObject as Array;
                     var newArray = newObject as Array;
@@ -146,7 +172,7 @@ namespace AnyMapper
                     for (var i = 0; i < sourceArray.Length; i++)
                     {
                         var element = sourceArray.GetValue(i);
-                        var newElement = InspectAndMap<TSource, TDest>(element, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var newElement = InspectAndMap<TSource, TDest>(element, element.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newArray.SetValue(newElement, i);
                     }
                     return newArray;
@@ -166,14 +192,65 @@ namespace AnyMapper
                         // also check the property for ignore, if this is a auto-backing property
                         if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", options, ignorePropertiesOrPaths, field.BackedProperty.CustomAttributes))
                             continue;
-                        var fieldTypeSupport = new ExtendedType(field.Type);
-                        var fieldValue = sourceObject.GetFieldValue(field);
-                        if (fieldTypeSupport.IsValueType || fieldTypeSupport.IsImmutable)
-                            newObject.SetFieldValue(field, fieldValue);
-                        else if (fieldValue != null)
+
+                        var sourceFieldName = field.Name;
+                        var sourceFieldBackedPropertyName = field.BackedPropertyName;
+                        var sourceFieldType = new ExtendedType(field.Type);
+                        var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType.GetExtendedType());
+                        var sourceFieldValue = sourceObject.GetFieldValue(field);
+
+                        var destinationFieldName = field.Name;
+                        var destinationFieldBackedPropertyName = field.BackedPropertyName;
+                        var destinationFieldType = sourceFieldType;
+                        var destinationField = new Field(destinationFieldBackedPropertyName, destinationFieldType, field.ReflectedType.GetExtendedType());
+                        // determine from the registry what we are mapping this to
+                        var fieldMapper = objectMapper?.Mappings
+                            .Where(x =>
+                                x.Source.DeclaringType == sourceFieldType
+                                && x.Source.Name == field.Name || (field.IsBackingField && x.Source.Name == field.BackedPropertyName))
+                            .FirstOrDefault();
+                        if (fieldMapper != null)
                         {
-                            var clonedFieldValue = InspectAndMap<TSource, TDest>(fieldValue, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                            newObject.SetFieldValue(field, clonedFieldValue);
+                            destinationFieldName = fieldMapper.Destination.Name;
+                            destinationFieldType = fieldMapper.Destination.Type;
+                            destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
+                        }
+
+                        FieldInfo destinationFieldInfo = null;
+                        PropertyInfo destinationPropertyInfo = null;
+                        destinationFieldInfo = newObject.GetField(destinationFieldName);
+                        if (destinationFieldInfo == null)
+                        {
+                            // doesn't exist on the other side
+                            destinationPropertyInfo = newObject.GetProperty(destinationFieldName);
+                        }
+
+                        if (destinationFieldInfo != null || destinationPropertyInfo != null)
+                        {
+                            if (destinationFieldInfo?.FieldType != sourceFieldType.Type
+                                && destinationPropertyInfo?.PropertyType != sourceFieldType.Type)
+                                throw new MappingException(sourceField, destinationField);
+
+                            if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
+                            {
+                                if (destinationFieldInfo != null)
+                                    newObject.SetFieldValue(destinationFieldName, sourceFieldValue);
+                                else
+                                    newObject.SetPropertyValue(destinationFieldName, sourceFieldValue);
+                            }
+                            else if (sourceFieldValue != null)
+                            {
+                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                                if (destinationFieldInfo != null)
+                                    newObject.SetFieldValue(destinationFieldName, clonedFieldValue);
+                                else
+                                    newObject.SetPropertyValue(destinationFieldName, clonedFieldValue);
+                            }
+                        }
+                        else
+                        {
+                            // destination field does not exist or is not mapped
+                            // throw new MappingException($"There is no mapping configured for the property {MappingException.FormatField(sourceField)}");
                         }
                     }
                 }

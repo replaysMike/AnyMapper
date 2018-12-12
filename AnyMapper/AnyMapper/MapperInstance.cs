@@ -6,43 +6,17 @@ using TypeSupport.Extensions;
 
 namespace AnyMapper
 {
-    /// <summary>
-    /// An instance of a mapper
-    /// </summary>
-    public class Mapper
+    public class MapperInstance
     {
-        private static readonly Mapper _instance = new Mapper();
-
         /// <summary>
         /// The mapping registry for mapping types
         /// </summary>
         public MappingRegistry Registry { get { return MappingConfigurationResolutionContext.GetMappingRegistry(); } }
 
-        // don't mark type as BeforeFieldInit
-        static Mapper()
+        public MapperInstance()
         {
+
         }
-
-        private Mapper()
-        {
-        }
-
-        /// <summary>
-        /// A mapping instance
-        /// </summary>
-        public static Mapper Instance
-        {
-            get
-            {
-                return _instance;
-            }
-        }
-
-        #region Public methods
-
-        #endregion
-
-        #region Static methods
 
         /// <summary>
         /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
@@ -51,7 +25,7 @@ namespace AnyMapper
         /// <typeparam name="TDest"></typeparam>
         /// <param name="source"></param>
         /// <returns></returns>
-        public static TDest Map<TSource, TDest>(TSource source)
+        public TDest Map<TSource, TDest>(TSource source)
         {
             var provider = new MappingProvider();
             return provider.Map<TSource, TDest>(source);
@@ -61,7 +35,7 @@ namespace AnyMapper
         /// Configure the mapper
         /// </summary>
         /// <param name="config"></param>
-        public static void Configure(Action<MappingConfiguration> config)
+        public void Configure(Action<MappingConfiguration> config)
         {
             var configuration = new MappingConfiguration();
             config.Invoke(configuration);
@@ -71,7 +45,7 @@ namespace AnyMapper
         /// Initialize the mapper and scan for profiles
         /// </summary>
         /// <param name="options"></param>
-        public static void Initialize(MappingOptions options = MappingOptions.ScanCurrentAssembly)
+        public void Initialize(MappingOptions options = MappingOptions.ScanCurrentAssembly)
         {
             var type = typeof(Profile);
             if (options.BitwiseHasFlag(MappingOptions.ScanAllAssemblies))
@@ -90,7 +64,7 @@ namespace AnyMapper
         /// Initialize the mapper and scan for profiles within the assemblies passed
         /// </summary>
         /// <param name="assemblies"></param>
-        public static void Initialize(Assembly[] assemblies)
+        public void Initialize(Assembly[] assemblies)
         {
             // scan a list of assemblies for profiles
             var type = typeof(AnyMapper.Profile);
@@ -109,7 +83,7 @@ namespace AnyMapper
         /// Initialize the mapper and use the profiles specified
         /// </summary>
         /// <param name="assemblies"></param>
-        public static void Initialize(params Profile[] profiles)
+        public void Initialize(params Profile[] profiles)
         {
             // add the profiles to the configuration
             Configure(config =>
@@ -117,7 +91,5 @@ namespace AnyMapper
                 config.AddProfiles(profiles);
             });
         }
-
-        #endregion
     }
 }

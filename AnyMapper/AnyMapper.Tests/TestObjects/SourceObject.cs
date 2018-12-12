@@ -9,5 +9,10 @@ namespace AnyMapper.Tests.TestObjects
         public string Name { get; set; }
         public int Id { get; set; }
         public DateTime DateCreated { get; set; }
+
+        public override string ToString()
+        {
+            return $"Id: {Id} Name: {Name} DateCreated: {DateCreated}";
+        }
     }
 }

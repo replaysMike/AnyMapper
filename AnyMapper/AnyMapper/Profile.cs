@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace AnyMapper
@@ -9,9 +10,23 @@ namespace AnyMapper
     /// </summary>
     public class Profile
     {
+
+        public Profile()
+        {
+            
+        }
+
         public IMappingExpression<TSource, TDest> CreateMap<TSource, TDest>()
         {
-            return new MappingExpression<TSource, TDest>();
+            var expression = new MappingExpression<TSource, TDest>(this.GetType());
+
+            return expression;
+        }
+
+        internal ICollection<FieldMap> GetMappings()
+        {
+            var registry = MappingConfigurationResolutionContext.GetMappingRegistry();
+            return registry.Mappings.Where(x => x.ProfileType == this.GetType()).ToList();
         }
 
         /// <summary>
@@ -22,7 +37,7 @@ namespace AnyMapper
         {
             get
             {
-                return true;
+                return GetMappings().Count > 0;
             }
         }
     }

@@ -5,13 +5,34 @@ namespace AnyMapper
 {
     public class MappingExpression<TSource, TDest> : IMappingExpression<TSource, TDest>
     {
+        public Type ProfileType { get; private set; }
+        public Expression<Func<TDest, object>> Destination { get; private set; }
+        public Expression<Func<TSource, object>> Source { get; private set; }
+
+        /// <summary>
+        /// True if the type is registered explicitly
+        /// </summary>
+        public bool IsRegistered { get; set; }
+
+        public MappingExpression(Type profileType)
+        {
+            ProfileType = profileType;
+        }
+
         public MappingExpression()
         {
         }
 
-        public IMappingExpression<TSource, TDest> ForMember(Expression<Func<TSource, object>> destination, Expression<Func<TDest, object>> source)
+        public IMappingExpression<TSource, TDest> ForMember(Expression<Func<TDest, object>> destination, Expression<Func<TSource, object>> source)
         {
-            return new MappingExpression<TSource, TDest>();
+            Source = source;
+            Destination = destination;
+
+            // resolve the current configuration and add it
+            var registry = MappingConfigurationResolutionContext.GetMappingRegistry();
+            registry.AddMapping(this);
+
+            return new MappingExpression<TSource, TDest>(ProfileType);
         }
     }
 }
