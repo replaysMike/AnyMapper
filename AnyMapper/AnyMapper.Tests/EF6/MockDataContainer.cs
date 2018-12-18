@@ -123,7 +123,7 @@ namespace AnyMapper.Tests.EF6
         /// <exception cref="KeyNotFoundException"></exception>
         public void Clear<T>() where T : class
         {
-            DataPair<T> dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
+            var dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
             if (dataPair == null)
                 throw new KeyNotFoundException($"Key for type {typeof(T)} does not exist.");
             dataPair.Collection.Clear();
@@ -137,7 +137,7 @@ namespace AnyMapper.Tests.EF6
         /// <returns></returns>
         public ICollection<T> GetCollection<T>() where T : class
         {
-            DataPair<T> dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
+            var dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
             if (dataPair == null)
                 throw new KeyNotFoundException($"Key for type {typeof(T)} does not exist.");
             return dataPair.Collection;
@@ -151,7 +151,7 @@ namespace AnyMapper.Tests.EF6
         /// <returns></returns>
         public Mock<DbSet<T>> GetSet<T>() where T : class
         {
-            DataPair<T> dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
+            var dataPair = _data.FirstOrDefault(x => x.Type == typeof(T)) as DataPair<T>;
             if (dataPair == null)
                 throw new KeyNotFoundException($"Key for type {typeof(T)} does not exist.");
             return dataPair.Set;
