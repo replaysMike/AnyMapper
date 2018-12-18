@@ -43,15 +43,15 @@ namespace AnyMapper
             _objectFactory = new ObjectFactory();
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject)
+        public TDest Map<TSource, TDest>(TSource sourceObject, MapOptions options)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, MapOptions options)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
@@ -61,13 +61,13 @@ namespace AnyMapper
         /// <param name="sourceObject">The object to clone</param>
         /// <param name="currentDepth">The current tree depth</param>
         /// <param name="maxDepth">The max tree depth</param>
-        /// <param name="options">The cloning options</param>
+        /// <param name="setupOptions">The cloning options</param>
         /// <param name="objectTree">The object tree to prevent cyclical references</param>
         /// <param name="path">The current path being traversed</param>
         /// <returns></returns>
-        private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MapOptions mapOptions, MappingSetupOptions setupOptions, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {
-            if (IgnoreObjectName(null, path, options, ignorePropertiesOrPaths))
+            if (IgnoreObjectName(null, path, mapOptions, setupOptions, ignorePropertiesOrPaths))
                 return null;
 
             if (sourceObject == null)
@@ -84,7 +84,7 @@ namespace AnyMapper
                 ignorePropertiesOrPaths = new List<string>();
 
             // drop any objects we are ignoring by attribute
-            if (mapToType.Attributes.Any(x => _ignoreAttributes.Contains(x)) && options.BitwiseHasFlag(MappingOptions.DisableIgnoreAttributes))
+            if (mapToType.Attributes.Any(x => _ignoreAttributes.Contains(x)) && setupOptions.BitwiseHasFlag(MappingSetupOptions.DisableIgnoreAttributes))
                 return null;
 
             // for delegate types, copy them by reference rather than returning null
@@ -150,8 +150,8 @@ namespace AnyMapper
                     var enumerator = (IDictionary)sourceObject;
                     foreach (DictionaryEntry item in enumerator)
                     {
-                        var key = InspectAndMap<TSource, TDest>(item.Key, null, item.Key.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                        var value = InspectAndMap<TSource, TDest>(item.Value, null, item.Value.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var key = InspectAndMap<TSource, TDest>(item.Key, null, item.Key.GetExtendedType(), currentDepth, maxDepth, mapOptions, setupOptions, objectTree, path, ignorePropertiesOrPaths);
+                        var value = InspectAndMap<TSource, TDest>(item.Value, null, item.Value.GetExtendedType(), currentDepth, maxDepth, mapOptions, setupOptions, objectTree, path, ignorePropertiesOrPaths);
                         newDictionary.Add(key, value);
                     }
                     return newObject;
@@ -166,7 +166,7 @@ namespace AnyMapper
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
                     {
-                        var element = InspectAndMap<TSource, TDest>(item, null, item.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var element = InspectAndMap<TSource, TDest>(item, null, item.GetExtendedType(), currentDepth, maxDepth, mapOptions, setupOptions, objectTree, path, ignorePropertiesOrPaths);
                         addMethod.Invoke(newObject, new object[] { element });
                     }
                     return newObject;
@@ -181,7 +181,7 @@ namespace AnyMapper
                     for (var i = 0; i < sourceArray.Length; i++)
                     {
                         var element = sourceArray.GetValue(i);
-                        var newElement = InspectAndMap<TSource, TDest>(element, null, element.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var newElement = InspectAndMap<TSource, TDest>(element, null, element.GetExtendedType(), currentDepth, maxDepth, mapOptions, setupOptions, objectTree, path, ignorePropertiesOrPaths);
                         newArray.SetValue(newElement, i);
                     }
                     return newArray;
@@ -196,10 +196,10 @@ namespace AnyMapper
                     foreach (var field in fields)
                     {
                         path = $"{rootPath}.{field.Name}";
-                        if (IgnoreObjectName(field.Name, path, options, ignorePropertiesOrPaths, field.CustomAttributes))
+                        if (IgnoreObjectName(field.Name, path, mapOptions, setupOptions, ignorePropertiesOrPaths, field.CustomAttributes))
                             continue;
                         // also check the property for ignore, if this is a auto-backing property
-                        if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", options, ignorePropertiesOrPaths, field.BackedProperty.CustomAttributes))
+                        if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", mapOptions, setupOptions, ignorePropertiesOrPaths, field.BackedProperty.CustomAttributes))
                             continue;
 
                         var sourceFieldName = field.Name;
@@ -249,7 +249,7 @@ namespace AnyMapper
                             }
                             else if (sourceFieldValue != null)
                             {
-                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, mapOptions, setupOptions, objectTree, path, ignorePropertiesOrPaths);
                                 if (destinationFieldInfo != null)
                                     newObject.SetFieldValue(destinationFieldName, clonedFieldValue);
                                 else
@@ -277,18 +277,24 @@ namespace AnyMapper
         /// </summary>
         /// <param name="name">Property or field name</param>
         /// <param name="path">Full path to object</param>
-        /// <param name="options">Comparison options</param>
+        /// <param name="setupOptions">Comparison options</param>
         /// <param name="ignorePropertiesOrPaths">List of names or paths to ignore</param>
         /// <returns></returns>
-        private bool IgnoreObjectName(string name, string path, MappingOptions options, ICollection<string> ignorePropertiesOrPaths, IEnumerable<CustomAttributeData> attributes = null)
+        private bool IgnoreObjectName(string name, string path, MapOptions mapOptions, MappingSetupOptions setupOptions, ICollection<string> ignorePropertiesOrPaths, IEnumerable<CustomAttributeData> attributes = null)
         {
             var ignoreByNameOrPath = ignorePropertiesOrPaths?.Contains(name) == true || ignorePropertiesOrPaths?.Contains(path) == true;
             if (ignoreByNameOrPath)
                 return true;
 #if FEATURE_CUSTOM_ATTRIBUTES
-            if (attributes?.Any(x => !options.BitwiseHasFlag(MappingOptions.DisableIgnoreAttributes) && (_ignoreAttributes.Contains(x.AttributeType) || _ignoreAttributes.Contains(x.AttributeType.Name))) == true)
+            if (attributes?.Any(x => !setupOptions.BitwiseHasFlag(MappingSetupOptions.DisableIgnoreAttributes) 
+                    && (_ignoreAttributes.Contains(x.AttributeType) || _ignoreAttributes.Contains(x.AttributeType.Name))) == true 
+               || attributes?.Any(x => mapOptions.BitwiseHasFlag(MapOptions.IgnoreEntityKeys)
+                    && (x.AttributeType.Name == "KeyAttribute")) == true)
 #else
-            if (attributes?.Any(x => !options.BitwiseHasFlag(MappingOptions.DisableIgnoreAttributes) && (_ignoreAttributes.Contains(x.Constructor.DeclaringType) || _ignoreAttributes.Contains(x.Constructor.DeclaringType.Name))) == true)
+            if (attributes?.Any(x => !options.BitwiseHasFlag(MappingSetupOptions.DisableIgnoreAttributes) 
+                    && (_ignoreAttributes.Contains(x.Constructor.DeclaringType) || _ignoreAttributes.Contains(x.Constructor.DeclaringType.Name))) == true)
+                || attributes?.Any(x => setupOptions.BitwiseHasFlag(MapOptions.IgnoreEntityKeys)
+                    && (x.Constructor.DeclaringType.Name == "KeyAttribute")) == true)
 #endif
                 return true;
             return false;

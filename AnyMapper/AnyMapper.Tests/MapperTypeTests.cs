@@ -1,8 +1,5 @@
-﻿using AnyMapper.Tests.TestObjects;
-using NUnit.Framework;
-using System;
+﻿using NUnit.Framework;
 using System.Collections.Generic;
-using System.Text;
 
 namespace AnyMapper.Tests
 {

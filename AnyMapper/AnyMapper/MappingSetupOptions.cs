@@ -6,7 +6,7 @@ namespace AnyMapper
     /// The mapping options
     /// </summary>
     [Flags]
-    public enum MappingOptions
+    public enum MappingSetupOptions
     {
         /// <summary>
         /// No options specified

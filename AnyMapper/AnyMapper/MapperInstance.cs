@@ -28,7 +28,49 @@ namespace AnyMapper
         public TDest Map<TSource, TDest>(TSource source)
         {
             var provider = new MappingProvider();
-            return provider.Map<TSource, TDest>(source);
+            return provider.Map<TSource, TDest>(source, MapOptions.None);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MapOptions options)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, options);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest)
+        {
+            return Map<TSource, TDest>(source, dest, MapOptions.None);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MapOptions options)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest, options);
         }
 
         /// <summary>
@@ -45,10 +87,10 @@ namespace AnyMapper
         /// Initialize the mapper and scan for profiles
         /// </summary>
         /// <param name="options"></param>
-        public void Initialize(MappingOptions options = MappingOptions.ScanCurrentAssembly)
+        public void Initialize(MappingSetupOptions options = MappingSetupOptions.ScanCurrentAssembly)
         {
             var type = typeof(Profile);
-            if (options.BitwiseHasFlag(MappingOptions.ScanAllAssemblies))
+            if (options.BitwiseHasFlag(MappingSetupOptions.ScanAllAssemblies))
             {
                 // scan all known assemblies in the app domain
                 Initialize(AppDomain.CurrentDomain.GetAssemblies());
