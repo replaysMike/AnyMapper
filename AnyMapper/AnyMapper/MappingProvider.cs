@@ -45,7 +45,13 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
@@ -59,7 +65,7 @@ namespace AnyMapper
         /// <param name="objectTree">The object tree to prevent cyclical references</param>
         /// <param name="path">The current path being traversed</param>
         /// <returns></returns>
-        private object InspectAndMap<TSource, TDest>(object sourceObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (IgnoreObjectName(null, path, options, ignorePropertiesOrPaths))
                 return null;
@@ -85,24 +91,27 @@ namespace AnyMapper
             if (mapToType.IsDelegate)
                 return sourceObject;
 
-            object newObject = null;
+            object newObject = destObject;
             // create a new empty object of the desired type
-            if (mapToType.IsArray)
+            if (newObject == null)
             {
-                var length = 0;
                 if (mapToType.IsArray)
-                    length = (sourceObject as Array).Length;
-                newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length: length);
-            }
-            else if (mapToType.Type == typeof(string))
-            {
-                // copy the item directly
-                newObject = String.Copy(Convert.ToString(sourceObject));
-                return newObject;
-            }
-            else
-            {
-                newObject = _objectFactory.CreateEmptyObject(mapToType.Type);
+                {
+                    var length = 0;
+                    if (mapToType.IsArray)
+                        length = (sourceObject as Array).Length;
+                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length: length);
+                }
+                else if (mapToType.Type == typeof(string))
+                {
+                    // copy the item directly
+                    newObject = String.Copy(Convert.ToString(sourceObject));
+                    return newObject;
+                }
+                else
+                {
+                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type);
+                }
             }
 
             if (newObject == null)
@@ -141,8 +150,8 @@ namespace AnyMapper
                     var enumerator = (IDictionary)sourceObject;
                     foreach (DictionaryEntry item in enumerator)
                     {
-                        var key = InspectAndMap<TSource, TDest>(item.Key, item.Key.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                        var value = InspectAndMap<TSource, TDest>(item.Value, item.Value.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var key = InspectAndMap<TSource, TDest>(item.Key, null, item.Key.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var value = InspectAndMap<TSource, TDest>(item.Value, null, item.Value.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newDictionary.Add(key, value);
                     }
                     return newObject;
@@ -157,7 +166,7 @@ namespace AnyMapper
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
                     {
-                        var element = InspectAndMap<TSource, TDest>(item, item.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var element = InspectAndMap<TSource, TDest>(item, null, item.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         addMethod.Invoke(newObject, new object[] { element });
                     }
                     return newObject;
@@ -172,7 +181,7 @@ namespace AnyMapper
                     for (var i = 0; i < sourceArray.Length; i++)
                     {
                         var element = sourceArray.GetValue(i);
-                        var newElement = InspectAndMap<TSource, TDest>(element, element.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var newElement = InspectAndMap<TSource, TDest>(element, null, element.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newArray.SetValue(newElement, i);
                     }
                     return newArray;
@@ -240,7 +249,7 @@ namespace AnyMapper
                             }
                             else if (sourceFieldValue != null)
                             {
-                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                                 if (destinationFieldInfo != null)
                                     newObject.SetFieldValue(destinationFieldName, clonedFieldValue);
                                 else

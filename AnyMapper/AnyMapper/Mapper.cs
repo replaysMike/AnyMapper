@@ -58,6 +58,20 @@ namespace AnyMapper
         }
 
         /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest);
+        }
+
+        /// <summary>
         /// Configure the mapper
         /// </summary>
         /// <param name="config"></param>
