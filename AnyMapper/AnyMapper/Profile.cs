@@ -23,6 +23,16 @@ namespace AnyMapper
             return expression;
         }
 
+        public TDest Resolve<TDest>(TDest value)
+        {
+            return value;
+        }
+
+        public TDest Resolve<TDest>(Func<TDest> func)
+        {
+            return func.Invoke();
+        }
+
         internal ICollection<FieldMap> GetMappings()
         {
             var registry = MappingConfigurationResolutionContext.GetMappingRegistry();

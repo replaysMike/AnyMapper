@@ -40,7 +40,7 @@ namespace AnyMapper.Tests
         }
 
         [Test]
-        public void Should_Duplicate_Row()
+        public void Should_Duplicate_Row_IgnoreKeys()
         {
             using (var context = new EFCoreDbContext(_options))
             {
@@ -48,6 +48,21 @@ namespace AnyMapper.Tests
                     .Include(x => x.ChildDbObjects)
                     .Where(x => x.Id == 1).FirstOrDefault();
                 var newRow = Mapper.Map<DbObject, DbObject>(row1, MapOptions.IgnoreEntityKeys);
+                context.DbObjects.Add(newRow);
+                var rowsModified = context.SaveChanges();
+                Assert.AreEqual(3, rowsModified);
+            }
+        }
+
+        [Test]
+        public void Should_Duplicate_Row_IgnoreAutoIncrement()
+        {
+            using (var context = new EFCoreDbContext(_options))
+            {
+                var row1 = context.DbObjects
+                    .Include(x => x.ChildDbObjects)
+                    .Where(x => x.Id == 1).FirstOrDefault();
+                var newRow = Mapper.Map<DbObject, DbObject>(row1, MapOptions.IgnoreEntityAutoIncrementProperties);
                 context.DbObjects.Add(newRow);
                 var rowsModified = context.SaveChanges();
                 Assert.AreEqual(3, rowsModified);

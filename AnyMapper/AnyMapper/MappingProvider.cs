@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -43,15 +44,39 @@ namespace AnyMapper
             _objectFactory = new ObjectFactory();
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, MapOptions options)
+        public TDest Map<TSource, TDest>(TSource sourceObject, MappingContext context, MapOptions options)
         {
             var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, MapOptions options)
+        public TDest Map<TSource, TDest>(TSource sourceObject, MappingContext context, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty, ConvertToPropertyNameList(ignoreProperties));
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, MappingContext context, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty, ignorePropertiesOrPaths);
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, MappingContext context, MapOptions options)
         {
             var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty);
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, MappingContext context, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty, ConvertToPropertyNameList(ignoreProperties));
+            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, MappingContext context, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, options, MappingSetupOptions.None, new Dictionary<int, object>(), string.Empty, ignorePropertiesOrPaths);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
@@ -196,9 +221,10 @@ namespace AnyMapper
                     foreach (var field in fields)
                     {
                         path = $"{rootPath}.{field.Name}";
+                        // check the source field for ignore
                         if (IgnoreObjectName(field.Name, path, mapOptions, setupOptions, ignorePropertiesOrPaths, field.CustomAttributes))
                             continue;
-                        // also check the property for ignore, if this is a auto-backing property
+                        // also check the backed source property for ignore, if this is a auto-backing property
                         if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", mapOptions, setupOptions, ignorePropertiesOrPaths, field.BackedProperty.CustomAttributes))
                             continue;
 
@@ -225,19 +251,28 @@ namespace AnyMapper
                             destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
                         }
 
-                        FieldInfo destinationFieldInfo = null;
-                        PropertyInfo destinationPropertyInfo = null;
-                        destinationFieldInfo = newObject.GetField(destinationFieldName);
+                        ExtendedField destinationFieldInfo = newObject.GetField(destinationFieldName);
+                        ExtendedProperty destinationPropertyInfo = null;
                         if (destinationFieldInfo == null)
                         {
                             // doesn't exist on the other side
                             destinationPropertyInfo = newObject.GetProperty(destinationFieldName);
                         }
 
+                        // also check the destination field for ignore
+                        if (destinationFieldInfo != null && IgnoreObjectName(destinationFieldInfo.Name, path, mapOptions, setupOptions, ignorePropertiesOrPaths, destinationFieldInfo.CustomAttributes))
+                            continue;
+                        // also check the backed destination property for ignore, if this is a auto-backing property
+                        if (destinationFieldInfo?.BackedProperty != null && IgnoreObjectName(destinationFieldInfo.BackedProperty.Name, $"{rootPath}.{destinationFieldInfo.BackedPropertyName}", mapOptions, setupOptions, ignorePropertiesOrPaths, destinationFieldInfo.BackedProperty.CustomAttributes))
+                            continue;
+                        // also check the destination property for ignore
+                        if (destinationPropertyInfo != null && IgnoreObjectName(destinationPropertyInfo.Name, path, mapOptions, setupOptions, ignorePropertiesOrPaths, destinationPropertyInfo.CustomAttributes))
+                            continue;
+
                         if (destinationFieldInfo != null || destinationPropertyInfo != null)
                         {
-                            if (destinationFieldInfo?.FieldType != sourceFieldType.Type
-                                && destinationPropertyInfo?.PropertyType != sourceFieldType.Type)
+                            if (destinationFieldInfo?.Type != sourceFieldType.Type
+                                && destinationPropertyInfo?.Type != sourceFieldType.Type)
                                 throw new MappingException(sourceField, destinationField);
 
                             if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
@@ -289,12 +324,19 @@ namespace AnyMapper
             if (attributes?.Any(x => !setupOptions.BitwiseHasFlag(MappingSetupOptions.DisableIgnoreAttributes) 
                     && (_ignoreAttributes.Contains(x.AttributeType) || _ignoreAttributes.Contains(x.AttributeType.Name))) == true 
                || attributes?.Any(x => mapOptions.BitwiseHasFlag(MapOptions.IgnoreEntityKeys)
-                    && (x.AttributeType.Name == "KeyAttribute")) == true)
+                    && (x.AttributeType.Name == "KeyAttribute")) == true
+                || attributes?.Any(x => mapOptions.BitwiseHasFlag(MapOptions.IgnoreEntityAutoIncrementProperties)
+                    && (x.AttributeType.Name == "DatabaseGeneratedAttribute" && x.ConstructorArguments.Any() && (int)x.ConstructorArguments.First().Value == (int)DatabaseGeneratedOption.Identity)) == true
+            )
 #else
             if (attributes?.Any(x => !options.BitwiseHasFlag(MappingSetupOptions.DisableIgnoreAttributes) 
                     && (_ignoreAttributes.Contains(x.Constructor.DeclaringType) || _ignoreAttributes.Contains(x.Constructor.DeclaringType.Name))) == true)
-                || attributes?.Any(x => setupOptions.BitwiseHasFlag(MapOptions.IgnoreEntityKeys)
-                    && (x.Constructor.DeclaringType.Name == "KeyAttribute")) == true)
+                || attributes?.Any(x => mapOptions.BitwiseHasFlag(MapOptions.IgnoreEntityKeys)
+                    && (x.Constructor.DeclaringType.Name == "KeyAttribute")) == true
+                || attributes?.Any(x => mapOptions.BitwiseHasFlag(MapOptions.IgnoreEntityAutoIncrementProperties)
+                    && (x.Constructor.DeclaringType.Name == "DatabaseGeneratedAttribute" && x.ConstructorArguments.Any() && (int)x.ConstructorArguments.First().Value == (int)DatabaseGeneratedOption.Identity)) == true
+
+            )
 #endif
                 return true;
             return false;

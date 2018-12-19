@@ -49,7 +49,7 @@ namespace AnyMapper.Tests
         }
 
         [Test]
-        public void Should_Duplicate_Row()
+        public void Should_Duplicate_Row_IgnoreKeys()
         {
             var row1 = _context.Object.DbObjects
                 .Include(x => x.ChildDbObjects)
@@ -60,6 +60,52 @@ namespace AnyMapper.Tests
 
             // note: children entries are not inserted using mock context with EF6
             Assert.AreEqual(1, rowsModified);
+            Assert.AreNotEqual(0, newRow.Id);
+        }
+
+        [Test]
+        public void Should_Duplicate_Row_IgnoreAutoIncrement()
+        {
+            var row1 = _context.Object.DbObjects
+                .Include(x => x.ChildDbObjects)
+                .Where(x => x.Id == 1).FirstOrDefault();
+            var newRow = Mapper.Map<DbObject, DbObject>(row1, MapOptions.IgnoreEntityAutoIncrementProperties);
+            _context.Object.DbObjects.Add(newRow);
+            var rowsModified = _context.Object.SaveChanges();
+
+            // note: children entries are not inserted using mock context with EF6
+            Assert.AreEqual(1, rowsModified);
+            Assert.AreNotEqual(0, newRow.Id);
+        }
+
+        [Test]
+        public void ShouldNot_Duplicate_Row()
+        {
+            var row1 = _context.Object.DbObjects
+                .Include(x => x.ChildDbObjects)
+                .Where(x => x.Id == 1).FirstOrDefault();
+            var newRow = Mapper.Map<DbObject, DbObject>(row1, MapOptions.None);
+            _context.Object.DbObjects.Add(newRow);
+            var rowsModified = _context.Object.SaveChanges();
+
+            // note: children entries are not inserted using mock context with EF6
+            Assert.AreEqual(1, rowsModified);
+            // normally this would be a key violation, but our mock context doesn't throw
+            Assert.AreEqual(2, _context.Object.DbObjects.Count(x => x.Id == 1));
+        }
+
+        [Test]
+        public void Should_Create_Row_FromDto()
+        {
+            var row1 = new DbObjectDto { Id = 1, Name = "Name1", Description = "Description", DateCreatedUtc = DateTime.UtcNow, DateModifiedUtc = DateTime.UtcNow };
+            var newRow = Mapper.Map<DbObjectDto, DbObject>(row1, MapOptions.IgnoreEntityKeys);
+            _context.Object.DbObjects.Add(newRow);
+            Assert.AreEqual(0, newRow.Id);
+            var rowsModified = _context.Object.SaveChanges();
+
+            // note: children entries are not inserted using mock context with EF6
+            Assert.AreEqual(1, rowsModified);
+            Assert.AreNotEqual(0, newRow.Id);
         }
     }
 }

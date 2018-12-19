@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using TypeSupport.Extensions;
 
@@ -53,7 +54,33 @@ namespace AnyMapper
         /// <returns></returns>
         public static TDest Map<TSource, TDest>(TSource source)
         {
-            return Map<TSource, TDest>(source, MapOptions.None);
+            return Map<TSource, TDest>(source, MappingContext.None, MapOptions.None);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MappingContext context)
+        {
+            return Map<TSource, TDest>(source, context, MapOptions.None);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MappingContext context, MapOptions options)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, context, options);
         }
 
         /// <summary>
@@ -66,8 +93,66 @@ namespace AnyMapper
         /// <returns></returns>
         public static TDest Map<TSource, TDest>(TSource source, MapOptions options)
         {
+            return Map<TSource, TDest>(source, MappingContext.None, options);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="options"></param>
+        /// <param name="ignoreProperties">A list of source object properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            return Map<TSource, TDest>(source, MappingContext.None, options, ignoreProperties);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="context"></param>
+        /// <param name="options"></param>
+        /// <param name="ignoreProperties">A list of source object properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MappingContext context, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
             var provider = new MappingProvider();
-            return provider.Map<TSource, TDest>(source, options);
+            return provider.Map<TSource, TDest>(source, context, options, ignoreProperties);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="options"></param>
+        /// <param name="ignorePropertiesOrPaths">A list of source object paths or property names to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            return Map<TSource, TDest>(source, MappingContext.None, options, ignorePropertiesOrPaths);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="options"></param>
+        /// <param name="ignorePropertiesOrPaths">A list of source object paths or property names to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, MappingContext context, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, context, options, ignorePropertiesOrPaths);
         }
 
         /// <summary>
@@ -90,12 +175,101 @@ namespace AnyMapper
         /// <typeparam name="TDest"></typeparam>
         /// <param name="source"></param>
         /// <param name="dest"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MappingContext context)
+        {
+            return Map<TSource, TDest>(source, dest, context, MapOptions.None);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MappingContext context, MapOptions options)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest, context, options);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
         /// <param name="options"></param>
         /// <returns></returns>
         public static TDest Map<TSource, TDest>(TSource source, TDest dest, MapOptions options)
         {
+            return Map<TSource, TDest>(source, dest, MappingContext.None, options);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <param name="ignoreProperties">A list of source object properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            return Map<TSource, TDest>(source, dest, MappingContext.None, options, ignoreProperties);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <param name="ignoreProperties">A list of source object properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MappingContext context, MapOptions options, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
             var provider = new MappingProvider();
-            return provider.Map<TSource, TDest>(source, dest, options);
+            return provider.Map<TSource, TDest>(source, dest, context, options, ignoreProperties);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <param name="ignorePropertiesOrPaths">A list of source object paths or property names to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            return Map<TSource, TDest>(source, dest, MappingContext.None, options, ignorePropertiesOrPaths);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="options"></param>
+        /// <param name="ignorePropertiesOrPaths">A list of source object paths or property names to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, MappingContext context, MapOptions options, params string[] ignorePropertiesOrPaths)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest, context, options, ignorePropertiesOrPaths);
         }
 
         /// <summary>

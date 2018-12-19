@@ -72,13 +72,29 @@ namespace AnyMapper.Tests
         }
 
         [Test]
+        public void Should_ResolveUsingProfileMap_SourceObject_To_UniqueObject()
+        {
+            var profile = new ResolveUsingProfile();
+            var sourceObject = new SourceObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+            Mapper.Configure(config =>
+            {
+                config.AddProfile(profile);
+            });
+            var destObject = Mapper.Map<SourceObject, UniqueObject>(sourceObject);
+
+            Assert.AreEqual(sourceObject.Id, destObject.UserId);
+            Assert.AreEqual(sourceObject.Name, destObject.FullName);
+            Assert.AreEqual(DateTime.MinValue, destObject.LogTime);
+        }
+
+        [Test]
         public void Should_DiscoverAssemblyProfiles()
         {
             Mapper.Initialize();
             var registry = Mapper.Instance.Registry;
 
             Assert.IsNotNull(registry);
-            Assert.AreEqual(2, registry.ObjectMappings.Count);
+            Assert.AreEqual(3, registry.ObjectMappings.Count);
         }
     }
 }

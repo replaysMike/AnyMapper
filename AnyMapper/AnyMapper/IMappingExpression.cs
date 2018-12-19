@@ -15,5 +15,13 @@ namespace AnyMapper
         /// <param name="source"></param>
         /// <returns></returns>
         IMappingExpression<TSource, TDest> ForMember(Expression<Func<TDest, Object>> destination, Expression<Func<TSource, Object>> source);
+
+        /// <summary>
+        /// Map one member to another
+        /// </summary>
+        /// <param name="destination"></param>
+        /// <param name="resolutionMethod"></param>
+        /// <returns></returns>
+        IMappingExpression<TSource, TDest> ForMember(Expression<Func<TDest, object>> destination, Func<TSource, MappingContext, Object> resolutionMethod);
     }
 }
