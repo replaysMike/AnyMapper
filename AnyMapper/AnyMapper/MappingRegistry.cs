@@ -107,6 +107,10 @@ namespace AnyMapper
             var name = string.Empty;
             ExtendedType type = null;
             ExtendedType declaringType = null;
+            var mm = expression.Body as UnaryExpression;
+            var mt = expression.Body.GetType();
+            var oo = mm.Operand.GetType();
+
             switch (expression.Body)
             {
                 case MemberExpression m:
@@ -120,6 +124,11 @@ namespace AnyMapper
                     if(m.Member.MemberType == System.Reflection.MemberTypes.Property)
                         type = ((PropertyInfo)m.Member).PropertyType.GetExtendedType();
                     declaringType = m.Member.DeclaringType.GetExtendedType();
+                    break;
+                case UnaryExpression u:
+                    name = "";
+                    type = u.Operand.Type.GetExtendedType();
+                    declaringType = u.Operand.Type.GetExtendedType();
                     break;
                 default:
                     throw new NotImplementedException(expression.GetType().ToString());

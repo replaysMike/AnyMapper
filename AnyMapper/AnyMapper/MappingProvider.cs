@@ -125,7 +125,8 @@ namespace AnyMapper
                     var length = 0;
                     if (mapToType.IsArray)
                         length = (sourceObject as Array).Length;
-                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length: length);
+                    var registry = TypeSupport.TypeRegistry.Configure(c => { });
+                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type, registry, length);
                 }
                 else if (mapToType.Type == typeof(string))
                 {
