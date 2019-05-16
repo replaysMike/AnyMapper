@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace AnyMapper.Tests.TestObjects
 {
@@ -9,9 +8,9 @@ namespace AnyMapper.Tests.TestObjects
         public string Name { get; set; }
         public int Id { get; set; }
         public DateTime DateCreated { get; set; }
-
         public string Description { get; set; }
         public bool IsEnabled { get; set; }
+        public ICollection<SimpleObject> Items { get; set; }
 
         public override string ToString()
         {

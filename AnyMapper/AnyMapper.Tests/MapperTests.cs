@@ -1,6 +1,7 @@
 ﻿using AnyMapper.Tests.TestObjects;
 using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 
 namespace AnyMapper.Tests
 {
@@ -31,12 +32,13 @@ namespace AnyMapper.Tests
         [Test]
         public void Should_ImplicitMap_DestObject_To_SourceObject()
         {
-            var destObject = new DestObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+            var destObject = new DestObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1), Items = new List<SimpleObject> { { new SimpleObject("Test1", "Name1") }, { new SimpleObject("Test2", "Name2") } } };
             var sourceObject = Mapper.Map<DestObject, SourceObject>(destObject);
 
             Assert.AreEqual(destObject.Id, sourceObject.Id);
             Assert.AreEqual(destObject.Name, sourceObject.Name);
             Assert.AreEqual(destObject.DateCreated, sourceObject.DateCreated);
+            CollectionAssert.AreEquivalent(destObject.Items, sourceObject.Items);
         }
 
         [Test]

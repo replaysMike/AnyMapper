@@ -9,6 +9,7 @@ namespace AnyMapper.Tests.TestObjects
         public string Name { get; set; }
         public int Id { get; set; }
         public DateTime DateCreated { get; set; }
+        public ICollection<SimpleObject> Items { get; set; }
 
         public override string ToString()
         {

@@ -45,13 +45,13 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<int, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
@@ -65,7 +65,7 @@ namespace AnyMapper
         /// <param name="objectTree">The object tree to prevent cyclical references</param>
         /// <param name="path">The current path being traversed</param>
         /// <returns></returns>
-        private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<int, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<ObjectHashcode, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {
             if (IgnoreObjectName(null, path, options, ignorePropertiesOrPaths))
                 return null;
@@ -100,7 +100,7 @@ namespace AnyMapper
                     var length = 0;
                     if (mapToType.IsArray)
                         length = (sourceObject as Array).Length;
-                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length: length);
+                    newObject = _objectFactory.CreateEmptyObject(mapToType.Type, length);
                 }
                 else if (mapToType.Type == typeof(string))
                 {
@@ -125,11 +125,12 @@ namespace AnyMapper
             if (sourceObject != null && !mapToType.IsValueType)
             {
                 var hashCode = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(sourceObject);
-                if (objectTree.ContainsKey(hashCode))
-                    return objectTree[hashCode];
+                var key = new ObjectHashcode(hashCode, newObject.GetType());
+                if (objectTree.ContainsKey(key))
+                    return objectTree[key];
 
                 // ensure we can refer back to the reference for this object
-                objectTree.Add(hashCode, newObject);
+                objectTree.Add(key, newObject);
             }
 
             var objectMapper = TypeRegistry.ObjectMappings
@@ -222,16 +223,20 @@ namespace AnyMapper
                         {
                             destinationFieldName = fieldMapper.Destination.Name;
                             destinationFieldType = fieldMapper.Destination.Type;
+                            destinationFieldBackedPropertyName = fieldMapper.Destination.Name;
                             destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
                         }
 
                         FieldInfo destinationFieldInfo = null;
                         PropertyInfo destinationPropertyInfo = null;
-                        destinationFieldInfo = newObject.GetField(destinationFieldName);
+                        destinationFieldInfo = newObject.GetField(destinationFieldName, field.Type);
                         if (destinationFieldInfo == null)
                         {
-                            // doesn't exist on the other side
-                            destinationPropertyInfo = newObject.GetProperty(destinationFieldName);
+                            // doesn't exist on the other side, try getting its property
+                            if(field.IsBackingField)
+                                destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, field.Type);
+                            else
+                                destinationPropertyInfo = newObject.GetProperty(destinationFieldName, field.Type);
                         }
 
                         if (destinationFieldInfo != null || destinationPropertyInfo != null)
@@ -243,17 +248,27 @@ namespace AnyMapper
                             if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
                             {
                                 if (destinationFieldInfo != null)
-                                    newObject.SetFieldValue(destinationFieldName, sourceFieldValue);
+                                    newObject.SetFieldValue(destinationFieldName, field.Type, sourceFieldValue);
                                 else
-                                    newObject.SetPropertyValue(destinationFieldName, sourceFieldValue);
+                                {
+                                    if(field.IsBackingField)
+                                        newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, sourceFieldValue);
+                                    else
+                                        newObject.SetPropertyValue(destinationFieldName, field.Type, sourceFieldValue);
+                                }
                             }
                             else if (sourceFieldValue != null)
                             {
                                 var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                                 if (destinationFieldInfo != null)
-                                    newObject.SetFieldValue(destinationFieldName, clonedFieldValue);
+                                    newObject.SetFieldValue(destinationFieldName, field.Type, clonedFieldValue);
                                 else
-                                    newObject.SetPropertyValue(destinationFieldName, clonedFieldValue);
+                                {
+                                    if (field.IsBackingField)
+                                        newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, clonedFieldValue);
+                                    else
+                                        newObject.SetPropertyValue(destinationFieldName, field.Type, clonedFieldValue);
+                                }
                             }
                         }
                         else
@@ -319,6 +334,32 @@ namespace AnyMapper
                 ignorePropertiesList.Add(name);
             }
             return ignorePropertiesList;
+        }
+    }
+
+    public struct ObjectHashcode
+    {
+        public int Hashcode { get; set; }
+        public Type Type { get; set; }
+        public ObjectHashcode(int hashcode, Type type)
+        {
+            Hashcode = hashcode;
+            Type = type;
+        }
+
+        public override int GetHashCode()
+        {
+            var computedHashcode = 23;
+            computedHashcode = computedHashcode * 31 + Hashcode;
+            computedHashcode = computedHashcode * 31 + Type.GetHashCode();
+            return computedHashcode;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj == null) return false;
+            var typedObj = (ObjectHashcode)obj;
+            return typedObj.Hashcode.Equals(Hashcode) && typedObj.Type.Equals(Type);
         }
     }
 }

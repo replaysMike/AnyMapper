@@ -34,7 +34,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="TypeSupport" Version="1.0.26" />
+    <PackageReference Include="TypeSupport" Version="1.0.79" />
   </ItemGroup>
 
 </Project>
