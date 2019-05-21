@@ -16,27 +16,19 @@ AnyMapper will automatically map between objects of different types as long as t
 
 ## Examples
 
-Map one object to another:
+Simple usage:
 ```csharp
-
-// configure our mapping profile
-var profile = new MyMappingProfile();
-Mapper.Configure(config =>
-{
-  config.AddProfile(profile);
-});
-
-// map one object to another
-var sourceObject = new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
 var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
-// output
-// destObject.Id = 1
-// destObject.Name = "Source object"
-// destObject.DateCreated = "2018-01-01 00:00:00"
-// destObject.Description = null
-// destObject.IsEnabled = false
-// destObject.Items = null
+```
 
+The above example will map the type `SourceObject` to type `DestObject`. Any fields and properties with the same name will be mapped, recursively. You can also map the same type to create a new copy of the data:
+
+```csharp
+var sourceObjectCloned = Mapper.Map<SourceObject, SourceObject>(sourceObject);
+```
+
+For all of the examples below we will use the following test classes:
+```csharp
 // *** classes used in all the examples ***
 public class MyMappingProfile : Profile
 {
@@ -65,6 +57,28 @@ public class DestObject
   public bool IsEnabled { get; set; }
   public ICollection<SimpleObject> Items { get; set; }
 }
+```
+
+Map one object to another:
+```csharp
+
+// configure our mapping profile
+var profile = new MyMappingProfile();
+Mapper.Configure(config =>
+{
+  config.AddProfile(profile);
+});
+
+// map one object to another
+var sourceObject = new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
+// output
+// destObject.Id = 1
+// destObject.Name = "Source object"
+// destObject.DateCreated = "2018-01-01 00:00:00"
+// destObject.Description = null
+// destObject.IsEnabled = false
+// destObject.Items = null
 ```
 
 Implicitly map (no specified profile) two different objects with similar properties, only matching property names will get mapped:
