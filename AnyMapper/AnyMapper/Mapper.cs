@@ -116,7 +116,7 @@ namespace AnyMapper
             foreach (var profileType in profileTypes)
                 profiles.Add((Profile)Activator.CreateInstance(profileType));
 
-            Initialize(profiles.ToArray());
+            Initialize(profiles);
         }
 
         /// <summary>
@@ -124,6 +124,19 @@ namespace AnyMapper
         /// </summary>
         /// <param name="assemblies"></param>
         public static void Initialize(params Profile[] profiles)
+        {
+            // add the profiles to the configuration
+            Configure(config =>
+            {
+                config.AddProfiles(profiles);
+            });
+        }
+
+        /// <summary>
+        /// Initialize the mapper and use the profiles specified
+        /// </summary>
+        /// <param name="assemblies"></param>
+        public static void Initialize(ICollection<Profile> profiles)
         {
             // add the profiles to the configuration
             Configure(config =>

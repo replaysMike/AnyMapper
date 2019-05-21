@@ -82,5 +82,17 @@ namespace AnyMapper.Tests
             Assert.IsNotNull(registry);
             Assert.AreEqual(2, registry.ObjectMappings.Count);
         }
+
+        [Test]
+        public void Should_UseConfiguredProfiles()
+        {
+            var profiles = new List<Profile>();
+            profiles.Add(new TestProfile());
+            Mapper.Initialize(profiles);
+            var registry = Mapper.Instance.Registry;
+
+            Assert.IsNotNull(registry);
+            Assert.AreEqual(2, registry.ObjectMappings.Count);
+        }
     }
 }
