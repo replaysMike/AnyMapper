@@ -30,6 +30,25 @@ var sourceObjectCloned = Mapper.Map<SourceObject, SourceObject>(sourceObject);
 For all of the examples below we will use the following test classes:
 ```csharp
 // *** classes used in all the examples ***
+public class SourceObject
+{
+  public string Name { get; set; }
+  public int Id { get; set; }
+  public DateTime DateCreated { get; set; }
+  public ICollection<SimpleObject> Items { get; set; }
+}
+
+public class DestObject
+{
+  public string Name { get; set; }
+  public int Id { get; set; }
+  public DateTime DateCreated { get; set; }
+  public string Description { get; set; }
+  public bool IsEnabled { get; set; }
+  public ICollection<SimpleObject> Items { get; set; }
+}
+
+// our custom mapping profile that indicates how one object maps to another
 public class MyMappingProfile : Profile
 {
   public MyMappingProfile()
@@ -40,22 +59,6 @@ public class MyMappingProfile : Profile
       .ForMember(x => x.DateCreated, x => x.DateCreated)
     ;
   }
-}
-public class SourceObject
-{
-  public string Name { get; set; }
-  public int Id { get; set; }
-  public DateTime DateCreated { get; set; }
-  public ICollection<SimpleObject> Items { get; set; }
-}
-public class DestObject
-{
-  public string Name { get; set; }
-  public int Id { get; set; }
-  public DateTime DateCreated { get; set; }
-  public string Description { get; set; }
-  public bool IsEnabled { get; set; }
-  public ICollection<SimpleObject> Items { get; set; }
 }
 ```
 
