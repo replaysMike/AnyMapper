@@ -100,3 +100,34 @@ var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
 
 ```
 
+### Profiles
+
+AnyMapper supports scanning for profiles in the current assembly using the following setup:
+
+```csharp
+Mapper.Initialize();
+```
+
+You can also specify profiles manually if you don't want to scan for them:
+
+```csharp
+var profiles = new List<Profile>();
+profiles.Add(new MyProfile());
+profiles.Add(new CustomerProfile());
+profiles.Add(new TypesProfile());
+Mapper.Initialize(profiles);
+```
+
+Some additional options for finding profiles:
+```csharp
+// scan specified assemblies
+var myAssembly1 = Assembly.Load(...assemblyPath);
+var myAssembly2 = Assembly.Load(...assemblyPath);
+Mapper.Initialize(myAssembly1, myAssembly2);
+
+// scan all assemblies in the application (performance will suffer in a large application)
+Mapper.Initialize(MappingOptions.ScanAllAssemblies);
+```
+
+
+
