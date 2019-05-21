@@ -16,5 +16,71 @@ AnyMapper will automatically map between objects of different types as long as t
 
 ## Examples
 
-Coming shortly!
+Map one object to another:
+```csharp
+
+// configure our mapping profile
+var profile = new MyMappingProfile();
+Mapper.Configure(config =>
+{
+  config.AddProfile(profile);
+});
+
+// map one object to another
+var sourceObject = new SourceObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
+// output
+// destObject.Id = 1
+// destObject.Name = "Source object"
+// destObject.DateCreated = "2018-01-01 00:00:00"
+// destObject.Description = null
+// destObject.IsEnabled = false
+// destObject.Items = null
+
+// *** classes used in all the examples ***
+public class MyMappingProfile : Profile
+{
+  public MyMappingProfile()
+  {
+    CreateMap<SourceObject, DestObject>()
+      .ForMember(x => x.Id, x => x.Id)
+      .ForMember(x => x.Name, x => x.Name)
+      .ForMember(x => x.DateCreated, x => x.DateCreated)
+    ;
+  }
+}
+public class SourceObject
+{
+  public string Name { get; set; }
+  public int Id { get; set; }
+  public DateTime DateCreated { get; set; }
+  public ICollection<SimpleObject> Items { get; set; }
+}
+public class DestObject
+{
+  public string Name { get; set; }
+  public int Id { get; set; }
+  public DateTime DateCreated { get; set; }
+  public string Description { get; set; }
+  public bool IsEnabled { get; set; }
+  public ICollection<SimpleObject> Items { get; set; }
+}
+```
+
+Implicitly map (no specified profile) two different objects with similar properties, only matching property names will get mapped:
+```csharp
+using AnyMapper;
+
+var sourceObject = new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
+
+// output
+// destObject.Id = 1
+// destObject.Name = "Source object"
+// destObject.DateCreated = "2018-01-01 00:00:00"
+// destObject.Description = null
+// destObject.IsEnabled = false
+// destObject.Items = null
+
+```
 
