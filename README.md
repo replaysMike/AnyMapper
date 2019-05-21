@@ -27,7 +27,7 @@ Mapper.Configure(config =>
 });
 
 // map one object to another
-var sourceObject = new SourceObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+var sourceObject = new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
 var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
 // output
 // destObject.Id = 1
