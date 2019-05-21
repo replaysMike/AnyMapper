@@ -18,6 +18,7 @@ AnyMapper will automatically map between objects of different types as long as t
 
 Simple usage:
 ```csharp
+using AnyMapper;
 var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
 ```
 
@@ -86,8 +87,6 @@ var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
 
 Implicitly map (no specified profile) two different objects with similar properties, only matching property names will get mapped:
 ```csharp
-using AnyMapper;
-
 var sourceObject = new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
 var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
 
