@@ -193,7 +193,7 @@ namespace AnyMapper
                     for (var i = 0; i < sourceArray.Length; i++)
                     {
                         var element = sourceArray.GetValue(i);
-                        var newElement = InspectAndMap<TSource, TDest>(element, null, element.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var newElement = InspectAndMap<TSource, TDest>(element, null, mapToType.ElementType.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newArray.SetValue(newElement, i);
                     }
                     return newArray;
