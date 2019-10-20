@@ -45,13 +45,24 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject)
         {
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
+            var destExtendedType = typeof(TDest).GetExtendedType();
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
+
+            // ChangeType doesn't like ICollection
+            if (destExtendedType.IsCollection)
+                return (TDest)obj;
+
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
         {
+            var destExtendedType = typeof(TDest).GetExtendedType();
             var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
+
+            // ChangeType doesn't like ICollection
+            if (destExtendedType.IsCollection)
+                return (TDest)obj;
             return (TDest)Convert.ChangeType(obj, typeof(TDest));
         }
 
@@ -167,7 +178,7 @@ namespace AnyMapper
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
                     {
-                        var element = InspectAndMap<TSource, TDest>(item, null, item.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var element = InspectAndMap<TSource, TDest>(item, null, genericExtendedType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         addMethod.Invoke(newObject, new object[] { element });
                     }
                     return newObject;
@@ -189,6 +200,7 @@ namespace AnyMapper
                 }
 
                 var fields = sourceObject.GetFields(FieldOptions.AllWritable);
+                var properties = sourceObject.GetProperties(PropertyOptions.HasGetter);
 
                 var rootPath = path;
                 // clone and recurse fields
@@ -202,79 +214,22 @@ namespace AnyMapper
                         // also check the property for ignore, if this is a auto-backing property
                         if (field.BackedProperty != null && IgnoreObjectName(field.BackedProperty.Name, $"{rootPath}.{field.BackedPropertyName}", options, ignorePropertiesOrPaths, field.BackedProperty.CustomAttributes))
                             continue;
+                        newObject = MapField<TSource, TDest>(newObject, sourceObject, objectMapper, field, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                    }
+                    foreach(var property in properties)
+                    {
+                        path = $"{rootPath}.{property.Name}";
+                        if (IgnoreObjectName(property.Name, path, options, ignorePropertiesOrPaths, property.CustomAttributes))
+                            continue;
+                        
+                        // also check the backing field for ignore, if this is a auto-backing property
+                        if (property.BackingFieldName != null && IgnoreObjectName(property.BackingFieldName, $"{rootPath}.{property.BackingFieldName}", options, ignorePropertiesOrPaths, fields.FirstOrDefault(x => x.Name == property.BackingFieldName).CustomAttributes))
+                            continue;
 
-                        var sourceFieldName = field.Name;
-                        var sourceFieldBackedPropertyName = field.BackedPropertyName;
-                        var sourceFieldType = new ExtendedType(field.Type);
-                        var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType.GetExtendedType());
-                        var sourceFieldValue = sourceObject.GetFieldValue(field);
-
-                        var destinationFieldName = field.Name;
-                        var destinationFieldBackedPropertyName = field.BackedPropertyName;
-                        var destinationFieldType = sourceFieldType;
-                        var destinationField = new Field(destinationFieldBackedPropertyName, destinationFieldType, field.ReflectedType.GetExtendedType());
-                        // determine from the registry what we are mapping this to
-                        var fieldMapper = objectMapper?.Mappings
-                            .Where(x =>
-                                x.Source.DeclaringType == sourceFieldType
-                                && x.Source.Name == field.Name || (field.IsBackingField && x.Source.Name == field.BackedPropertyName))
-                            .FirstOrDefault();
-                        if (fieldMapper != null)
+                        if (string.IsNullOrEmpty(property.BackingFieldName))
                         {
-                            destinationFieldName = fieldMapper.Destination.Name;
-                            destinationFieldType = fieldMapper.Destination.Type;
-                            destinationFieldBackedPropertyName = fieldMapper.Destination.Name;
-                            destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
-                        }
-
-                        FieldInfo destinationFieldInfo = null;
-                        PropertyInfo destinationPropertyInfo = null;
-                        destinationFieldInfo = newObject.GetField(destinationFieldName, field.Type);
-                        if (destinationFieldInfo == null)
-                        {
-                            // doesn't exist on the other side, try getting its property
-                            if(field.IsBackingField)
-                                destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, field.Type);
-                            else
-                                destinationPropertyInfo = newObject.GetProperty(destinationFieldName, field.Type);
-                        }
-
-                        if (destinationFieldInfo != null || destinationPropertyInfo != null)
-                        {
-                            if (destinationFieldInfo?.FieldType != sourceFieldType.Type
-                                && destinationPropertyInfo?.PropertyType != sourceFieldType.Type)
-                                throw new MappingException(sourceField, destinationField);
-
-                            if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
-                            {
-                                if (destinationFieldInfo != null)
-                                    newObject.SetFieldValue(destinationFieldName, field.Type, sourceFieldValue);
-                                else
-                                {
-                                    if(field.IsBackingField)
-                                        newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, sourceFieldValue);
-                                    else
-                                        newObject.SetPropertyValue(destinationFieldName, field.Type, sourceFieldValue);
-                                }
-                            }
-                            else if (sourceFieldValue != null)
-                            {
-                                var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                                if (destinationFieldInfo != null)
-                                    newObject.SetFieldValue(destinationFieldName, field.Type, clonedFieldValue);
-                                else
-                                {
-                                    if (field.IsBackingField)
-                                        newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, clonedFieldValue);
-                                    else
-                                        newObject.SetPropertyValue(destinationFieldName, field.Type, clonedFieldValue);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // destination field does not exist or is not mapped
-                            // throw new MappingException($"There is no mapping configured for the property {MappingException.FormatField(sourceField)}");
+                            // map the property, it has no backing field so it's likely a method call
+                            newObject = MapProperty<TSource, TDest>(newObject, sourceObject, objectMapper, property, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         }
                     }
                 }
@@ -285,6 +240,148 @@ namespace AnyMapper
             {
 
             }
+        }
+
+        private object MapField<TSource, TDest>(object newObject, object sourceObject, ObjectMap objectMapper, ExtendedField field, int currentDepth, int maxDepth, MappingOptions options, IDictionary<ObjectHashcode, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        {
+            var sourceFieldName = field.Name;
+            var sourceFieldBackedPropertyName = field.BackedPropertyName;
+            var sourceFieldType = new ExtendedType(field.Type);
+            var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType.GetExtendedType());
+            var sourceFieldValue = sourceObject.GetFieldValue(field);
+
+            var destinationFieldName = field.Name;
+            var destinationFieldBackedPropertyName = field.BackedPropertyName;
+            var destinationFieldType = sourceFieldType;
+            var destinationField = new Field(destinationFieldBackedPropertyName, destinationFieldType, field.ReflectedType.GetExtendedType());
+            // determine from the registry what we are mapping this to
+            var fieldMapper = objectMapper?.Mappings
+                .Where(x =>
+                    x.Source.DeclaringType == sourceFieldType
+                    && x.Source.Name == field.Name || (field.IsBackingField && x.Source.Name == field.BackedPropertyName))
+                .FirstOrDefault();
+            if (fieldMapper != null)
+            {
+                destinationFieldName = fieldMapper.Destination.Name;
+                destinationFieldType = fieldMapper.Destination.Type;
+                destinationFieldBackedPropertyName = fieldMapper.Destination.Name;
+                destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
+            }
+
+            FieldInfo destinationFieldInfo = null;
+            PropertyInfo destinationPropertyInfo = null;
+            destinationFieldInfo = newObject.GetField(destinationFieldName, field.Type);
+            if (destinationFieldInfo == null)
+            {
+                // doesn't exist on the other side, try getting its property
+                if (field.IsBackingField)
+                    destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, field.Type);
+                else
+                    destinationPropertyInfo = newObject.GetProperty(destinationFieldName, field.Type);
+            }
+
+            if (destinationFieldInfo != null || destinationPropertyInfo != null)
+            {
+                if (destinationFieldInfo?.FieldType != sourceFieldType.Type
+                    && destinationPropertyInfo?.PropertyType != sourceFieldType.Type)
+                    throw new MappingException(sourceField, destinationField);
+
+                if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
+                {
+                    if (destinationFieldInfo != null)
+                        newObject.SetFieldValue(destinationFieldName, field.Type, sourceFieldValue);
+                    else
+                    {
+                        if (field.IsBackingField)
+                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, sourceFieldValue);
+                        else
+                            newObject.SetPropertyValue(destinationFieldName, field.Type, sourceFieldValue);
+                    }
+                }
+                else if (sourceFieldValue != null)
+                {
+                    var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                    if (destinationFieldInfo != null)
+                        newObject.SetFieldValue(destinationFieldName, field.Type, clonedFieldValue);
+                    else
+                    {
+                        if (field.IsBackingField)
+                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, clonedFieldValue);
+                        else
+                            newObject.SetPropertyValue(destinationFieldName, field.Type, clonedFieldValue);
+                    }
+                }
+            }
+            else
+            {
+                // destination field does not exist or is not mapped
+                // throw new MappingException($"There is no mapping configured for the property {MappingException.FormatField(sourceField)}");
+            }
+            return newObject;
+        }
+
+        private object MapProperty<TSource, TDest>(object newObject, object sourceObject, ObjectMap objectMapper, ExtendedProperty property, int currentDepth, int maxDepth, MappingOptions options, IDictionary<ObjectHashcode, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
+        {
+            var sourcePropertyName = property.Name;
+            var sourcePropertyType = new ExtendedType(property.Type);
+            var sourceField = new Field(sourcePropertyName, sourcePropertyType, property.ReflectedType.GetExtendedType());
+            var sourceFieldValue = sourceObject.GetPropertyValue(property);
+
+            var destinationFieldName = property.Name;
+            var destinationFieldType = sourcePropertyType;
+            var destinationField = new Field(destinationFieldName, destinationFieldType, property.ReflectedType.GetExtendedType());
+            // determine from the registry what we are mapping this to
+            var fieldMapper = objectMapper?.Mappings
+                .Where(x =>
+                    x.Source.DeclaringType == sourcePropertyType
+                    && x.Source.Name == property.Name)
+                .FirstOrDefault();
+            if (fieldMapper != null)
+            {
+                destinationFieldName = fieldMapper.Destination.Name;
+                destinationFieldType = fieldMapper.Destination.Type;
+                destinationField = new Field(destinationFieldName, destinationFieldType, fieldMapper.Destination.DeclaringType);
+            }
+
+            FieldInfo destinationFieldInfo = null;
+            PropertyInfo destinationPropertyInfo = null;
+            destinationFieldInfo = newObject.GetField(destinationFieldName, property.Type);
+            if (destinationFieldInfo == null)
+            {
+                // doesn't exist on the other side, try getting its property
+                destinationPropertyInfo = newObject.GetProperty(destinationFieldName, property.Type);
+            }
+
+            if (destinationPropertyInfo != null)
+            {
+                if (destinationFieldInfo?.FieldType != sourcePropertyType.Type
+                    && destinationPropertyInfo?.PropertyType != sourcePropertyType.Type)
+                    throw new MappingException(sourceField, destinationField);
+
+                if (sourcePropertyType.IsValueType || sourcePropertyType.IsImmutable)
+                {
+                    try
+                    {
+                        newObject.SetPropertyValue(destinationFieldName, property.Type, sourceFieldValue);
+                    }
+                    catch (Exception) { }
+                }
+                else if (sourceFieldValue != null)
+                {
+                    var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourcePropertyType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                    try
+                    {
+                        newObject.SetPropertyValue(destinationFieldName, property.Type, clonedFieldValue);
+                    }
+                    catch (Exception) { }
+                }
+            }
+            else
+            {
+                // destination field does not exist or is not mapped
+                // throw new MappingException($"There is no mapping configured for the property {MappingException.FormatField(sourceField)}");
+            }
+            return newObject;
         }
 
         /// <summary>

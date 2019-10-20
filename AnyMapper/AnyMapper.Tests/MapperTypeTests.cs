@@ -30,16 +30,6 @@ namespace AnyMapper.Tests
         }
 
         [Test]
-        public void Should_Map_Array()
-        {
-            Mapper.Initialize();
-            var sourceObject = new int[] { 1, 2, 3, 4, 5, 6, 7, 8 };
-            var destObject = Mapper.Map<int[], int[]>(sourceObject);
-
-            CollectionAssert.AreEqual(sourceObject, destObject);
-        }
-
-        [Test]
         public void Should_Map_String()
         {
             Mapper.Initialize();
@@ -47,18 +37,6 @@ namespace AnyMapper.Tests
             var destObject = Mapper.Map<string, string>(sourceObject);
 
             Assert.AreEqual(sourceObject, destObject);
-        }
-
-        [Test]
-        public void Should_Map_ExistingCollection()
-        {
-            Mapper.Initialize();
-            var sourceObject = new List<int>() { 1, 2, 3, 4, 5, 6, 7, 8 };
-            var destObject = new List<int>() { 100, 200 };
-            destObject = Mapper.Map<List<int>, List<int>>(sourceObject, destObject);
-
-            // there should be 2 extra elements in destObject
-            Assert.AreEqual(sourceObject.Count + 2, destObject.Count);
         }
     }
 }

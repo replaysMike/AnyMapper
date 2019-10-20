@@ -32,13 +32,13 @@ namespace AnyMapper.Tests
         [Test]
         public void Should_ImplicitMap_DestObject_To_SourceObject()
         {
-            var destObject = new DestObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1), Items = new List<SimpleObject> { { new SimpleObject("Test1", "Name1") }, { new SimpleObject("Test2", "Name2") } } };
-            var sourceObject = Mapper.Map<DestObject, SourceObject>(destObject);
+            var sourceObject = new DestObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1), Items = new List<SimpleObject> { { new SimpleObject("Test1", "Name1") }, { new SimpleObject("Test2", "Name2") } } };
+            var destObject = Mapper.Map<DestObject, SourceObject>(sourceObject);
 
-            Assert.AreEqual(destObject.Id, sourceObject.Id);
-            Assert.AreEqual(destObject.Name, sourceObject.Name);
-            Assert.AreEqual(destObject.DateCreated, sourceObject.DateCreated);
-            CollectionAssert.AreEquivalent(destObject.Items, sourceObject.Items);
+            Assert.AreEqual(sourceObject.Id, destObject.Id);
+            Assert.AreEqual(sourceObject.Name, destObject.Name);
+            Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
+            CollectionAssert.AreEquivalent(sourceObject.Items, destObject.Items);
         }
 
         [Test]
@@ -55,6 +55,44 @@ namespace AnyMapper.Tests
             Assert.AreEqual(sourceObject.Id, destObject.Id);
             Assert.AreEqual(sourceObject.Name, destObject.Name);
             Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
+        }
+
+        [Test]
+        public void Should_ImplicitMap_ReadOnlyProperties()
+        {
+            var sourceObject = new DestObject(333) { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1), Items = new List<SimpleObject> { { new SimpleObject("Test1", "Name1") }, { new SimpleObject("Test2", "Name2") } } };
+            var destObject = Mapper.Map<DestObject, SourceObject>(sourceObject);
+
+            Assert.AreEqual(sourceObject.Id, destObject.Id);
+            Assert.AreEqual(sourceObject.ReadOnlyId, destObject.ReadOnlyId);
+            Assert.AreEqual(sourceObject.Name, destObject.Name);
+            Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
+            CollectionAssert.AreEquivalent(sourceObject.Items, destObject.Items);
+        }
+
+        [Test]
+        public void Should_ImplicitMap_ReadOnlyFields()
+        {
+            var sourceObject = new DestObject("readonlyfieldval") { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1), Items = new List<SimpleObject> { { new SimpleObject("Test1", "Name1") }, { new SimpleObject("Test2", "Name2") } } };
+            var destObject = Mapper.Map<DestObject, SourceObject>(sourceObject);
+
+            Assert.AreEqual(sourceObject.Id, destObject.Id);
+            Assert.IsTrue(sourceObject.ValidateReadOnlyField("readonlyfieldval"));
+            Assert.IsTrue(destObject.ValidateReadOnlyField("readonlyfieldval"));
+            Assert.AreEqual(sourceObject.Name, destObject.Name);
+            Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
+            CollectionAssert.AreEquivalent(sourceObject.Items, destObject.Items);
+        }
+
+        [Test]
+        public void Should_ImplicitMap_ReadOnlyComputedFields()
+        {
+            var sourceObject = new Person { Name = "Test User", DOB = new DateTime(1985, 11, 14) };
+            var destObject = Mapper.Map<Person, Customer>(sourceObject);
+
+            Assert.AreEqual(sourceObject.Name, destObject.Name);
+            Assert.AreEqual(sourceObject.DOB, destObject.DOB);
+            Assert.AreEqual(sourceObject.Age, destObject.Age);
         }
 
         [Test]
