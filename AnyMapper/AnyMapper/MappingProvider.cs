@@ -45,8 +45,18 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject)
         {
+            return Map<TSource, TDest>(sourceObject, new List<string>());
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            return Map<TSource, TDest>(sourceObject, ConvertToPropertyNameList<TSource>(ignoreProperties));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, ICollection<string> ignorePropertiesOrPath)
+        {
             var destExtendedType = typeof(TDest).GetExtendedType();
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, null, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPath);
 
             // ChangeType doesn't like ICollection
             if (destExtendedType.IsCollection)
@@ -57,8 +67,18 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
         {
+            return Map<TSource, TDest>(sourceObject, destObject, new List<string>());
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            return Map<TSource, TDest>(sourceObject, destObject, ConvertToPropertyNameList<TSource>(ignoreProperties));
+        }
+
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, ICollection<string> ignorePropertiesOrPaths)
+        {
             var destExtendedType = typeof(TDest).GetExtendedType();
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty);
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPaths);
 
             // ChangeType doesn't like ICollection
             if (destExtendedType.IsCollection)
@@ -70,11 +90,14 @@ namespace AnyMapper
         /// (Recursive) Recursive function that inspects an object and its properties/fields and clones it
         /// </summary>
         /// <param name="sourceObject">The object to clone</param>
+        /// <param name="destObject">The destination object</param>
+        /// <param name="mapToType">The type to map to</param>
         /// <param name="currentDepth">The current tree depth</param>
         /// <param name="maxDepth">The max tree depth</param>
         /// <param name="options">The cloning options</param>
         /// <param name="objectTree">The object tree to prevent cyclical references</param>
         /// <param name="path">The current path being traversed</param>
+        /// <param name="ignorePropertiesOrPaths">A list of properties or paths to ignore</param>
         /// <returns></returns>
         private object InspectAndMap<TSource, TDest>(object sourceObject, object destObject, ExtendedType mapToType, int currentDepth, int maxDepth, MappingOptions options, IDictionary<ObjectHashcode, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {

@@ -132,5 +132,18 @@ namespace AnyMapper.Tests
             Assert.IsNotNull(registry);
             Assert.AreEqual(2, registry.ObjectMappings.Count);
         }
+
+        [Test]
+        public void Should_ImplicitMap_SourceObject_To_DestObject_WithIgnore()
+        {
+            var sourceObject = new SourceObject() { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) };
+            var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject, x => x.Name);
+
+            Assert.AreEqual(sourceObject.Id, destObject.Id);
+            Assert.AreEqual(null, destObject.Name);
+            Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
+            Assert.AreEqual(destObject.IsEnabled, false);
+            Assert.IsNull(destObject.Description);
+        }
     }
 }

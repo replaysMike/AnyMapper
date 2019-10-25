@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using TypeSupport.Extensions;
 
@@ -63,12 +64,70 @@ namespace AnyMapper
         /// <typeparam name="TSource"></typeparam>
         /// <typeparam name="TDest"></typeparam>
         /// <param name="source"></param>
+        /// <param name="ignorePropertiesOrPath">A list of properties or paths to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, ICollection<string> ignorePropertiesOrPath)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, ignorePropertiesOrPath);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="ignoreProperties">A list expressions that define properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, ignoreProperties);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
         /// <param name="dest"></param>
         /// <returns></returns>
         public static TDest Map<TSource, TDest>(TSource source, TDest dest)
         {
             var provider = new MappingProvider();
             return provider.Map<TSource, TDest>(source, dest);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="ignorePropertiesOrPath">A list of properties or paths to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, ICollection<string> ignorePropertiesOrPath)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest, ignorePropertiesOrPath);
+        }
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="dest"></param>
+        /// <param name="ignoreProperties">A list expressions that define properties to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TSource, TDest>(TSource source, TDest dest, params Expression<Func<TSource, object>>[] ignoreProperties)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<TSource, TDest>(source, dest, ignoreProperties);
         }
 
         /// <summary>
