@@ -14,6 +14,7 @@ namespace AnyMapper.Tests.TestObjects
         public string Description { get; set; }
         public bool IsEnabled { get; set; }
         public ICollection<SimpleObject> Items { get; set; }
+        public int? NullableInt { get; set; }
 
         public DestObject() { }
         public DestObject(int readOnlyPropertyId)

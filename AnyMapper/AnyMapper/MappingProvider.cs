@@ -29,7 +29,7 @@ namespace AnyMapper
         {
             get
             {
-                if(_typeRegistry == null)
+                if (_typeRegistry == null)
                     _typeRegistry = MappingConfigurationResolutionContext.GetMappingRegistry();
                 return _typeRegistry;
             }
@@ -239,12 +239,12 @@ namespace AnyMapper
                             continue;
                         newObject = MapField<TSource, TDest>(newObject, sourceObject, objectMapper, field, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                     }
-                    foreach(var property in properties)
+                    foreach (var property in properties)
                     {
                         path = $"{rootPath}.{property.Name}";
                         if (IgnoreObjectName(property.Name, path, options, ignorePropertiesOrPaths, property.CustomAttributes))
                             continue;
-                        
+
                         // also check the backing field for ignore, if this is a auto-backing property
                         if (property.BackingFieldName != null && IgnoreObjectName(property.BackingFieldName, $"{rootPath}.{property.BackingFieldName}", options, ignorePropertiesOrPaths, fields.FirstOrDefault(x => x.Name == property.BackingFieldName).CustomAttributes))
                             continue;
@@ -293,45 +293,73 @@ namespace AnyMapper
 
             FieldInfo destinationFieldInfo = null;
             PropertyInfo destinationPropertyInfo = null;
-            destinationFieldInfo = newObject.GetField(destinationFieldName, field.Type);
+            destinationFieldInfo = newObject.GetField(destinationFieldName, sourceFieldType.Type);
+            if (destinationFieldInfo == null)
+            {
+                if (sourceFieldType.IsNullable)
+                {
+                    // support nullable => non-nullable
+                    destinationFieldInfo = newObject.GetField(destinationFieldName, sourceFieldType.NullableBaseType);
+                    if (destinationFieldInfo != null)
+                        destinationFieldType = sourceFieldType.NullableBaseType.GetExtendedType();
+                }
+            }
             if (destinationFieldInfo == null)
             {
                 // doesn't exist on the other side, try getting its property
+                // todo: reduce the code duplication here
                 if (field.IsBackingField)
-                    destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, field.Type);
+                {
+                    destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, sourceFieldType.Type);
+                    if (destinationPropertyInfo == null) {
+                        // support non-nullable => nullable
+                        destinationPropertyInfo = newObject.GetProperty(destinationFieldBackedPropertyName, GetNullableType(sourceFieldType.Type));
+                        if (destinationPropertyInfo != null)
+                            destinationFieldType = GetNullableType(sourceFieldType.Type).GetExtendedType();
+                    }
+                }
                 else
-                    destinationPropertyInfo = newObject.GetProperty(destinationFieldName, field.Type);
+                {
+                    destinationPropertyInfo = newObject.GetProperty(destinationFieldName, sourceFieldType.Type);
+                    if (destinationPropertyInfo == null) {
+                        // support non-nullable => nullable
+                        destinationPropertyInfo = newObject.GetProperty(destinationFieldName, GetNullableType(sourceFieldType.Type));
+                        if (destinationPropertyInfo != null)
+                            destinationFieldType = GetNullableType(sourceFieldType.Type).GetExtendedType();
+                    }
+                }
             }
 
             if (destinationFieldInfo != null || destinationPropertyInfo != null)
             {
-                if (destinationFieldInfo?.FieldType != sourceFieldType.Type
-                    && destinationPropertyInfo?.PropertyType != sourceFieldType.Type)
+                var sourceBaseType = sourceFieldType.IsNullable ? sourceFieldType.NullableBaseType : sourceFieldType.Type;
+                var destinationBaseType = destinationFieldType.IsNullable ? destinationFieldType.NullableBaseType : destinationFieldType.Type;
+                if (sourceBaseType != destinationBaseType)
                     throw new MappingException(sourceField, destinationField);
 
                 if (sourceFieldType.IsValueType || sourceFieldType.IsImmutable)
                 {
                     if (destinationFieldInfo != null)
-                        newObject.SetFieldValue(destinationFieldName, field.Type, sourceFieldValue);
+                        newObject.SetFieldValue(destinationFieldName, destinationFieldType.Type, sourceFieldValue);
                     else
                     {
                         if (field.IsBackingField)
-                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, sourceFieldValue);
+                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, destinationFieldType.Type, sourceFieldValue);
                         else
-                            newObject.SetPropertyValue(destinationFieldName, field.Type, sourceFieldValue);
+                            newObject.SetPropertyValue(destinationFieldName, destinationFieldType.Type, sourceFieldValue);
                     }
                 }
                 else if (sourceFieldValue != null)
                 {
                     var clonedFieldValue = InspectAndMap<TSource, TDest>(sourceFieldValue, null, sourceFieldType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                     if (destinationFieldInfo != null)
-                        newObject.SetFieldValue(destinationFieldName, field.Type, clonedFieldValue);
+                        newObject.SetFieldValue(destinationFieldName, destinationFieldType.Type, clonedFieldValue);
                     else
                     {
                         if (field.IsBackingField)
-                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, field.Type, clonedFieldValue);
+                            newObject.SetPropertyValue(destinationFieldBackedPropertyName, destinationFieldType.Type, clonedFieldValue);
                         else
-                            newObject.SetPropertyValue(destinationFieldName, field.Type, clonedFieldValue);
+                            newObject.SetPropertyValue(destinationFieldName, destinationFieldType.Type, clonedFieldValue);
                     }
                 }
             }
@@ -454,6 +482,15 @@ namespace AnyMapper
                 ignorePropertiesList.Add(name);
             }
             return ignorePropertiesList;
+        }
+
+        private Type GetNullableType(Type type)
+        {
+            type = Nullable.GetUnderlyingType(type) ?? type;
+            if (type.IsValueType)
+                return typeof(Nullable<>).MakeGenericType(type);
+            else
+                return type;
         }
     }
 

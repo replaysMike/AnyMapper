@@ -13,6 +13,7 @@ namespace AnyMapper.Tests.TestObjects
         public int ReadOnlyId { get; }
         public DateTime DateCreated { get; set; }
         public ICollection<SimpleObject> Items { get; set; }
+        public int NullableInt { get; set; }
 
         public SourceObject() { }
         public SourceObject(int readOnlyPropertyId)

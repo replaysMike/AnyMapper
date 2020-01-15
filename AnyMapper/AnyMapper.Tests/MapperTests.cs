@@ -96,6 +96,26 @@ namespace AnyMapper.Tests
         }
 
         [Test]
+        public void Should_ImplicitMap_NonNullableToNullable()
+        {
+            var sourceObject = new SourceObject { NullableInt = 123 };
+            var destObject = Mapper.Map<SourceObject, DestObject>(sourceObject);
+
+            Assert.NotNull(destObject.NullableInt);
+            Assert.AreEqual(sourceObject.NullableInt, destObject.NullableInt.Value);
+        }
+
+        [Test]
+        public void Should_ImplicitMap_NullableToNonNullable()
+        {
+            var sourceObject = new DestObject { NullableInt = 123 };
+            var destObject = Mapper.Map<DestObject, SourceObject>(sourceObject);
+
+            Assert.NotNull(sourceObject.NullableInt);
+            Assert.AreEqual(sourceObject.NullableInt.Value, destObject.NullableInt);
+        }
+
+        [Test]
         public void Should_ProfileMap_SourceObject_To_UniqueObject()
         {
             var profile = new UniqueProfile();
