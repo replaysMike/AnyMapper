@@ -55,14 +55,15 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject, ICollection<string> ignorePropertiesOrPath)
         {
-            var destExtendedType = typeof(TDest).GetExtendedType();
+            var type = typeof(TDest);
+            var destExtendedType = type.GetExtendedType();
             var obj = InspectAndMap<TSource, TDest>(sourceObject, null, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPath);
 
             // ChangeType doesn't like ICollection
             if (destExtendedType.IsCollection)
                 return (TDest)obj;
 
-            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+            return (TDest)Convert.ChangeType(obj, type);
         }
 
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
@@ -77,13 +78,14 @@ namespace AnyMapper
 
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, ICollection<string> ignorePropertiesOrPaths)
         {
-            var destExtendedType = typeof(TDest).GetExtendedType();
-            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, typeof(TDest).GetExtendedType(), 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPaths);
+            var type = typeof(TDest);
+            var destExtendedType = type.GetExtendedType();
+            var obj = InspectAndMap<TSource, TDest>(sourceObject, destObject, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPaths);
 
             // ChangeType doesn't like ICollection
             if (destExtendedType.IsCollection)
                 return (TDest)obj;
-            return (TDest)Convert.ChangeType(obj, typeof(TDest));
+            return (TDest)Convert.ChangeType(obj, type);
         }
 
         /// <summary>
@@ -270,13 +272,13 @@ namespace AnyMapper
             var sourceFieldName = field.Name;
             var sourceFieldBackedPropertyName = field.BackedPropertyName;
             var sourceFieldType = field.Type;
-            var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType.GetExtendedType());
+            var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType);
             var sourceFieldValue = sourceObject.GetFieldValue(field);
 
             var destinationFieldName = field.Name;
             var destinationFieldBackedPropertyName = field.BackedPropertyName;
             var destinationFieldType = sourceFieldType;
-            var destinationField = new Field(destinationFieldBackedPropertyName, destinationFieldType, field.ReflectedType.GetExtendedType());
+            var destinationField = new Field(destinationFieldBackedPropertyName, destinationFieldType, field.ReflectedType);
             // determine from the registry what we are mapping this to
             var fieldMapper = objectMapper?.Mappings
                 .Where(x =>
@@ -375,12 +377,12 @@ namespace AnyMapper
         {
             var sourcePropertyName = property.Name;
             var sourcePropertyType = property.Type;
-            var sourceField = new Field(sourcePropertyName, sourcePropertyType, property.ReflectedType.GetExtendedType());
+            var sourceField = new Field(sourcePropertyName, sourcePropertyType, property.ReflectedType);
             var sourceFieldValue = sourceObject.GetPropertyValue(property);
 
             var destinationFieldName = property.Name;
             var destinationFieldType = sourcePropertyType;
-            var destinationField = new Field(destinationFieldName, destinationFieldType, property.ReflectedType.GetExtendedType());
+            var destinationField = new Field(destinationFieldName, destinationFieldType, property.ReflectedType);
             // determine from the registry what we are mapping this to
             var fieldMapper = objectMapper?.Mappings
                 .Where(x =>
