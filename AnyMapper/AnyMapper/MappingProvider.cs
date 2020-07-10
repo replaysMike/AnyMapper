@@ -111,8 +111,8 @@ namespace AnyMapper
             if (maxDepth > 0 && currentDepth >= maxDepth)
                 return null;
 
-            var sourceType = new ExtendedType(typeof(TSource));
-            var destType = new ExtendedType(typeof(TDest));
+            var sourceType = typeof(TSource).GetExtendedType();
+            var destType = typeof(TDest).GetExtendedType();
 
             if (ignorePropertiesOrPaths == null)
                 ignorePropertiesOrPaths = new List<string>();
@@ -196,7 +196,7 @@ namespace AnyMapper
                 if (mapToType.IsEnumerable && mapToType.IsGeneric)
                 {
                     var genericType = mapToType.Type.GetGenericArguments().First();
-                    var genericExtendedType = new ExtendedType(genericType);
+                    var genericExtendedType = genericType.GetExtendedType();
                     var addMethod = mapToType.Type.GetMethod("Add");
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
@@ -269,7 +269,7 @@ namespace AnyMapper
         {
             var sourceFieldName = field.Name;
             var sourceFieldBackedPropertyName = field.BackedPropertyName;
-            var sourceFieldType = new ExtendedType(field.Type);
+            var sourceFieldType = field.Type;
             var sourceField = new Field(sourceFieldBackedPropertyName ?? sourceFieldName, sourceFieldType, field.ReflectedType.GetExtendedType());
             var sourceFieldValue = sourceObject.GetFieldValue(field);
 
@@ -374,7 +374,7 @@ namespace AnyMapper
         private object MapProperty<TSource, TDest>(object newObject, object sourceObject, ObjectMap objectMapper, ExtendedProperty property, int currentDepth, int maxDepth, MappingOptions options, IDictionary<ObjectHashcode, object> objectTree, string path, ICollection<string> ignorePropertiesOrPaths = null)
         {
             var sourcePropertyName = property.Name;
-            var sourcePropertyType = new ExtendedType(property.Type);
+            var sourcePropertyType = property.Type;
             var sourceField = new Field(sourcePropertyName, sourcePropertyType, property.ReflectedType.GetExtendedType());
             var sourceFieldValue = sourceObject.GetPropertyValue(property);
 
