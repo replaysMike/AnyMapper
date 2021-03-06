@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace AnyMapper.Tests.TestObjects
+﻿namespace AnyMapper.Tests.TestObjects
 {
     public class TestProfile : Profile
     {

@@ -46,6 +46,31 @@ namespace AnyMapper
         #region Static methods
 
         /// <summary>
+        /// Maps object to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <returns></returns>
+        public static TDest Map<TDest>(object source)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<object, TDest>(source);
+        }
+
+        /// <summary>
+        /// Maps object to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="source"></param>
+        /// <param name="ignorePropertiesOrPath">A list of properties or paths to ignore</param>
+        /// <returns></returns>
+        public static TDest Map<TDest>(object source, ICollection<string> ignorePropertiesOrPath)
+        {
+            var provider = new MappingProvider();
+            return provider.Map<object, TDest>(source, ignorePropertiesOrPath);
+        }
+
+        /// <summary>
         /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
         /// </summary>
         /// <typeparam name="TSource"></typeparam>
@@ -97,7 +122,7 @@ namespace AnyMapper
         public static TDest Map<TSource, TDest>(TSource source, TDest dest)
         {
             var provider = new MappingProvider();
-            return provider.Map<TSource, TDest>(source, dest);
+            return provider.Map(source, dest);
         }
 
         /// <summary>

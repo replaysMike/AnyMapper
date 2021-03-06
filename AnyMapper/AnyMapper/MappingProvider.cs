@@ -10,6 +10,9 @@ using TypeSupport.Extensions;
 
 namespace AnyMapper
 {
+    /// <summary>
+    /// AnyMapper mapping provider
+    /// </summary>
     public class MappingProvider
     {
         public const int DefaultMaxDepth = 32;
@@ -21,9 +24,9 @@ namespace AnyMapper
         };
 
         private MappingRegistry _typeRegistry;
+
         /// <summary>
         /// The type registry that contains mapping profiles
-        /// todo: a singleton instance isn't ideal
         /// </summary>
         public MappingRegistry TypeRegistry
         {
@@ -36,23 +39,49 @@ namespace AnyMapper
         }
 
         /// <summary>
-        /// Provider for cloning objects
+        /// Create a provider for mapping objects
         /// </summary>
         public MappingProvider()
         {
             _objectFactory = new ObjectFactory();
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject)
-        {
-            return Map<TSource, TDest>(sourceObject, new List<string>());
-        }
+        /// <summary>
+        /// Maps object to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <returns></returns>
+        public TDest Map<TDest>(object sourceObject) => Map<object, TDest>(sourceObject, new List<string>());
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, params Expression<Func<TSource, object>>[] ignoreProperties)
-        {
-            return Map<TSource, TDest>(sourceObject, ConvertToPropertyNameList<TSource>(ignoreProperties));
-        }
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <returns></returns>
+        public TDest Map<TSource, TDest>(TSource sourceObject) => Map<TSource, TDest>(sourceObject, new List<string>());
 
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="ignoreProperties"></param>
+        /// <returns></returns>
+        public TDest Map<TSource, TDest>(TSource sourceObject, params Expression<Func<TSource, object>>[] ignoreProperties) 
+            => Map<TSource, TDest>(sourceObject, ConvertToPropertyNameList(ignoreProperties));
+
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="ignorePropertiesOrPath"></param>
+        /// <returns></returns>
         public TDest Map<TSource, TDest>(TSource sourceObject, ICollection<string> ignorePropertiesOrPath)
         {
             var type = typeof(TDest);
@@ -66,16 +95,38 @@ namespace AnyMapper
             return (TDest)Convert.ChangeType(obj, type);
         }
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject)
-        {
-            return Map<TSource, TDest>(sourceObject, destObject, new List<string>());
-        }
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="destObject"></param>
+        /// <returns></returns>
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject) 
+            => Map(sourceObject, destObject, new List<string>());
 
-        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, params Expression<Func<TSource, object>>[] ignoreProperties)
-        {
-            return Map<TSource, TDest>(sourceObject, destObject, ConvertToPropertyNameList<TSource>(ignoreProperties));
-        }
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="destObject"></param>
+        /// <param name="ignoreProperties"></param>
+        /// <returns></returns>
+        public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, params Expression<Func<TSource, object>>[] ignoreProperties) 
+            => Map(sourceObject, destObject, ConvertToPropertyNameList(ignoreProperties));
 
+        /// <summary>
+        /// Maps <typeparamref name="TSource"/> to <typeparamref name="TDest"/>
+        /// </summary>
+        /// <typeparam name="TSource"></typeparam>
+        /// <typeparam name="TDest"></typeparam>
+        /// <param name="sourceObject"></param>
+        /// <param name="destObject"></param>
+        /// <param name="ignorePropertiesOrPaths"></param>
+        /// <returns></returns>
         public TDest Map<TSource, TDest>(TSource sourceObject, TDest destObject, ICollection<string> ignorePropertiesOrPaths)
         {
             var type = typeof(TDest);
