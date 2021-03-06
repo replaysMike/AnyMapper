@@ -192,7 +192,7 @@ namespace AnyMapper
                 else if (mapToType.Type == typeof(string))
                 {
                     // copy the item directly
-                    newObject = String.Copy(Convert.ToString(sourceObject));
+                    newObject = Convert.ToString(sourceObject);
                     return newObject;
                 }
                 else
