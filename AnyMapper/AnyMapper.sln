@@ -1,11 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2003
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31025.194
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnyMapper", "AnyMapper\AnyMapper.csproj", "{56FD2C52-E232-415F-B543-93C8EE98CD6B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnyMapper", "AnyMapper\AnyMapper.csproj", "{56FD2C52-E232-415F-B543-93C8EE98CD6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AnyMapper.Tests", "AnyMapper.Tests\AnyMapper.Tests.csproj", "{CB79941C-83BF-4A37-BF3E-0CEF9ED6E77B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AnyMapper.Tests", "AnyMapper.Tests\AnyMapper.Tests.csproj", "{CB79941C-83BF-4A37-BF3E-0CEF9ED6E77B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

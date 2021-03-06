@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net45;net46;net461;net462;net47;net48</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net461;net462;net47;net48</TargetFrameworks>
 		<Authors>Michael Brown</Authors>
 		<Company>Refactor Software</Company>
 		<Description>A lightweight CSharp mapping library for mapping one object type to another.</Description>
@@ -21,7 +21,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="any.png" Pack="true" PackagePath=""/>
+		<None Include="any.png" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -43,7 +43,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ILRepack.MSBuild.Task" Version="2.0.13" PrivateAssets="all" />
+		<PackageReference Include="ILRepack.Task" Version="1.0.6" />
 		<PackageReference Include="TypeSupport" Version="1.1.4" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
