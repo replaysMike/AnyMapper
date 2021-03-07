@@ -34,4 +34,8 @@
     <ProjectReference Include="..\AnyMapper\AnyMapper.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ComplexObjects\data\" />
+  </ItemGroup>
+
 </Project>

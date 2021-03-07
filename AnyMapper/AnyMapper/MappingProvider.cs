@@ -89,7 +89,7 @@ namespace AnyMapper
             var obj = InspectAndMap<TSource, TDest>(sourceObject, null, destExtendedType, 0, DefaultMaxDepth, MappingOptions.None, new Dictionary<ObjectHashcode, object>(), string.Empty, ignorePropertiesOrPath);
 
             // ChangeType doesn't like ICollection
-            if (destExtendedType.IsCollection)
+            if (destExtendedType.IsCollection || destExtendedType.IsDictionary)
                 return (TDest)obj;
 
             return (TDest)Convert.ChangeType(obj, type);
@@ -165,7 +165,11 @@ namespace AnyMapper
                 return null;
 
             var sourceType = typeof(TSource).GetExtendedType();
+            if (sourceType == typeof(object) && sourceObject != null)
+                sourceType = mapToType;
             var destType = typeof(TDest).GetExtendedType();
+            if (destType == typeof(object) && destObject != null)
+                destType = destObject.GetExtendedType();
 
             if (ignorePropertiesOrPaths == null)
                 ignorePropertiesOrPaths = new List<string>();
@@ -238,8 +242,8 @@ namespace AnyMapper
                     var enumerator = (IDictionary)sourceObject;
                     foreach (DictionaryEntry item in enumerator)
                     {
-                        var key = InspectAndMap<TSource, TDest>(item.Key, null, item.Key.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                        var value = InspectAndMap<TSource, TDest>(item.Value, null, item.Value.GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var key = InspectAndMap<TSource, TDest>(item.Key, null, genericType[0].GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
+                        var value = InspectAndMap<TSource, TDest>(item.Value, null, genericType[1].GetExtendedType(), currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
                         newDictionary.Add(key, value);
                     }
                     return newObject;
@@ -249,13 +253,24 @@ namespace AnyMapper
                 if (mapToType.IsEnumerable && mapToType.IsGeneric)
                 {
                     var genericType = mapToType.Type.GetGenericArguments().First();
+                    Type[] typeArgs = { genericType };
                     var genericExtendedType = genericType.GetExtendedType();
                     var addMethod = mapToType.Type.GetMethod("Add");
+                    IList newList = null;
+                    if (addMethod == null)
+                    {
+                        var listType = typeof(List<>).MakeGenericType(typeArgs);
+                        newList = Activator.CreateInstance(listType) as IList;
+                        newObject = newList;
+                    }
                     var enumerator = (IEnumerable)sourceObject;
                     foreach (var item in enumerator)
                     {
                         var element = InspectAndMap<TSource, TDest>(item, null, genericExtendedType, currentDepth, maxDepth, options, objectTree, path, ignorePropertiesOrPaths);
-                        addMethod.Invoke(newObject, new object[] { element });
+                        if (addMethod != null)
+                            addMethod.Invoke(newObject, new object[] { element });
+                        else
+                            newList.Add(element);
                     }
                     return newObject;
                 }

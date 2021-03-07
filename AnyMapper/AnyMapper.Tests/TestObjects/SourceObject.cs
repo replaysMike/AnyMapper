@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace AnyMapper.Tests.TestObjects
 {
-    public class SourceObject
+    public class SourceObject : IEquatable<SourceObject>, IEquatable<DestObject>
     {
         private readonly string _readOnlyField = "";
 
@@ -33,6 +34,26 @@ namespace AnyMapper.Tests.TestObjects
         public override string ToString()
         {
             return $"Id: {Id} Name: {Name} DateCreated: {DateCreated}";
+        }
+
+        public bool Equals(SourceObject other)
+        {
+            return Name.Equals(other.Name)
+                && Id.Equals(other.Id)
+                && ReadOnlyId.Equals(other.ReadOnlyId)
+                && DateCreated.Equals(other.DateCreated)
+                && (Items == null || Items.SequenceEqual(other.Items))
+                && NullableInt.Equals(other.NullableInt);
+        }
+
+        public bool Equals(DestObject other)
+        {
+            return Name.Equals(other.Name)
+                && Id.Equals(other.Id)
+                && ReadOnlyId.Equals(other.ReadOnlyId)
+                && DateCreated.Equals(other.DateCreated)
+                && (Items == null || Items.SequenceEqual(other.Items))
+                && NullableInt.Equals(other.NullableInt);
         }
     }
 }

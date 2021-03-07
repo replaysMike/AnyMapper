@@ -1,7 +1,9 @@
-﻿using AnyMapper.Tests.TestObjects;
+﻿using Complex = AnyMapper.Tests.ComplexObjects;
+using AnyMapper.Tests.TestObjects;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace AnyMapper.Tests
 {
@@ -12,7 +14,7 @@ namespace AnyMapper.Tests
         public void Should_Create_MappingProfile()
         {
             var testProfile = new TestProfile();
-            
+
             Assert.IsTrue(testProfile.IsValid);
         }
 
@@ -177,6 +179,28 @@ namespace AnyMapper.Tests
             Assert.AreEqual(sourceObject.DateCreated, destObject.DateCreated);
             Assert.AreEqual(destObject.IsEnabled, false);
             Assert.IsNull(destObject.Description);
+        }
+
+        [Test]
+        public void Should_ImplicitMap_ComplexDictionaryMapping()
+        {
+            var sourceObject = new Dictionary<SourceObject, Person>()
+            {
+                { new SourceObject { Id = 1, Name = "Source object", DateCreated = new DateTime(2018, 1, 1) }, new Person { Name = "Michael", DOB = new DateTime(1978, 2, 22) } }
+            };
+            var destObject = Mapper.Map<IDictionary<DestObject, Person>>(sourceObject);
+
+            Assert.IsTrue(sourceObject.First().Key.Equals(destObject.First().Key));
+            Assert.IsTrue(sourceObject.First().Value.Equals(destObject.First().Value));
+        }
+
+        [Test]
+        public void Should_ImplicitMap_ComplexMapping()
+        {
+            var dict = new Dictionary<Complex.ns1.Inventory, Complex.ns1.Inventory>() { { Complex.ComplexObjectFactory.CreateSspInventory(), Complex.ComplexObjectFactory.CreateSspInventory() } };
+
+            Assert.DoesNotThrow(() => Mapper.Map<IDictionary<Complex.ns2.Inventory, Complex.ns2.Inventory>>(dict));
+            
         }
     }
 }
