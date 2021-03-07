@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netstandard2.0;net461;net462;net47;net48</TargetFrameworks>
+		<TargetFrameworks>netstandard2.0;net461;net462;net47;net48;net5.0</TargetFrameworks>
 		<Authors>Michael Brown</Authors>
 		<Company>Refactor Software</Company>
 		<Description>A lightweight CSharp mapping library for mapping one object type to another.</Description>
